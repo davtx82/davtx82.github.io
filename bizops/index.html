@@ -15,7 +15,6 @@
 
 <div id="app">
 
-  <!-- Sidebar -->
   <aside id="sidebar">
     <div class="sidebar-logo">
       <h1>BizOps</h1>
@@ -41,10 +40,8 @@
     </nav>
   </aside>
 
-  <!-- Main -->
   <main id="main">
 
-    <!-- Hero -->
     <div id="hero">
       <h2>All your leads, automated and in one place.</h2>
       <p>A simple operations dashboard for small businesses. Connects to your AI lead automation so every missed call and web form inquiry lands here automatically.</p>
@@ -53,22 +50,22 @@
     <!-- Dashboard Page -->
     <section class="page active" id="page-dashboard">
       <div class="stats-grid" style="margin-top:28px">
-        <div class="stat-card">
+        <div class="stat-card" onclick="navigateLeads('All')">
           <div class="label">Active Leads</div>
           <div class="value" id="stat-leads">&mdash;</div>
           <div class="sub">not won or lost</div>
         </div>
-        <div class="stat-card alert">
-          <div class="label">Overdue Follow-ups</div>
+        <div class="stat-card alert" onclick="navigateLeads('Overdue')">
+          <div class="label">Follow-Ups Due</div>
           <div class="value" id="stat-overdue">&mdash;</div>
-          <div class="sub">need attention now</div>
+          <div class="sub">need attention</div>
         </div>
-        <div class="stat-card success">
+        <div class="stat-card success" onclick="navigateLeads('All')">
           <div class="label">Open Revenue</div>
           <div class="value" id="stat-revenue">&mdash;</div>
           <div class="sub">estimated pipeline</div>
         </div>
-        <div class="stat-card warn">
+        <div class="stat-card warn" onclick="navigateTasks('Open')">
           <div class="label">Tasks Due Today</div>
           <div class="value" id="stat-tasks">&mdash;</div>
           <div class="sub">open tasks today</div>
@@ -79,7 +76,7 @@
         <div class="card">
           <div class="card-header">
             Top Priority Follow-ups
-            <button class="btn btn-ghost btn-sm" onclick="navigate('leads')">View all</button>
+            <button class="btn btn-ghost btn-sm" onclick="navigateLeads('Overdue')">View all</button>
           </div>
           <div class="card-body">
             <table>
@@ -111,7 +108,12 @@
         <input type="text" id="lead-search" placeholder="Search by name, company, or email&hellip;">
         <select id="lead-filter">
           <option value="All">All Statuses</option>
-          <option>New</option><option>Contacted</option><option>Waiting</option><option>Won</option><option>Lost</option>
+          <option>New</option>
+          <option>Contacted</option>
+          <option>Waiting</option>
+          <option>Won</option>
+          <option>Lost</option>
+          <option value="Overdue">Overdue Follow-up</option>
         </select>
       </div>
       <div class="card">
@@ -157,14 +159,8 @@
         </h3>
         <p>Connect your Airtable base to display leads from your AI automation in real time. Get your Base ID and Personal Access Token from <strong>airtable.com/create/tokens</strong> (scope: <code>data.records:read</code>, <code>data.records:write</code>).</p>
         <div class="form-row">
-          <div class="form-group">
-            <label for="at-base-id">Base ID</label>
-            <input type="text" id="at-base-id" placeholder="appXXXXXXXXXXXXXX" autocomplete="off" spellcheck="false">
-          </div>
-          <div class="form-group">
-            <label for="at-pat">Personal Access Token</label>
-            <input type="password" id="at-pat" placeholder="patXXXXXXXXXXXXXX" autocomplete="off">
-          </div>
+          <div class="form-group"><label for="at-base-id">Base ID</label><input type="text" id="at-base-id" placeholder="appXXXXXXXXXXXXXX" autocomplete="off" spellcheck="false"></div>
+          <div class="form-group"><label for="at-pat">Personal Access Token</label><input type="password" id="at-pat" placeholder="patXXXXXXXXXXXXXX" autocomplete="off"></div>
         </div>
         <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
           <button id="at-save-btn" class="btn btn-primary" onclick="saveAtConfig()">Save &amp; Connect</button>
@@ -202,10 +198,7 @@
 <!-- Lead Modal -->
 <div class="modal-overlay" id="lead-modal">
   <div class="modal">
-    <div class="modal-header">
-      <h3 id="lead-modal-title">New Lead</h3>
-      <button class="modal-close" onclick="closeLeadModal()">&times;</button>
-    </div>
+    <div class="modal-header"><h3 id="lead-modal-title">New Lead</h3><button class="modal-close" onclick="closeLeadModal()">&times;</button></div>
     <div class="modal-body">
       <input type="hidden" id="lead-id">
       <div class="form-row">
@@ -237,10 +230,7 @@
 <!-- Task Modal -->
 <div class="modal-overlay" id="task-modal">
   <div class="modal">
-    <div class="modal-header">
-      <h3 id="task-modal-title">New Task</h3>
-      <button class="modal-close" onclick="closeTaskModal()">&times;</button>
-    </div>
+    <div class="modal-header"><h3 id="task-modal-title">New Task</h3><button class="modal-close" onclick="closeTaskModal()">&times;</button></div>
     <div class="modal-body">
       <input type="hidden" id="task-id">
       <div class="form-row full"><div class="form-group"><label for="task-title">Task Title *</label><input type="text" id="task-title" placeholder="What needs to be done?"></div></div>

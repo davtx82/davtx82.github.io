@@ -59,25 +59,9 @@ const AT = {
     const data = await this._req('Leads?sort%5B0%5D%5Bfield%5D=name&sort%5B0%5D%5Bdirection%5D=asc');
     return (data.records || []).map(r => this._in(r));
   },
-
-  async createLead(fields) {
-    return this._in(await this._req('Leads', {
-      method: 'POST',
-      body: JSON.stringify({ fields: this._out(fields) })
-    }));
-  },
-
-  async updateLead(id, fields) {
-    return this._in(await this._req(`Leads/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ fields: this._out(fields) })
-    }));
-  },
-
-  async deleteLead(id) {
-    await this._req(`Leads/${id}`, { method: 'DELETE' });
-  },
-
+  async createLead(fields) { return this._in(await this._req('Leads', { method: 'POST', body: JSON.stringify({ fields: this._out(fields) }) })); },
+  async updateLead(id, fields) { return this._in(await this._req(`Leads/${id}`, { method: 'PATCH', body: JSON.stringify({ fields: this._out(fields) }) })); },
+  async deleteLead(id) { await this._req(`Leads/${id}`, { method: 'DELETE' }); },
   async ping() { await this._req('Leads?maxRecords=1'); }
 };
 
@@ -144,33 +128,24 @@ const DEMO_ACTIVITY = [
   { text: 'Derek Thompson marked Lost', time: '3 days ago', type: 'danger' },
 ];
 
-function daysFromNow(n) {
-  const d = new Date();
-  d.setDate(d.getDate() + n);
-  return d.toISOString().split('T')[0];
-}
-
+function daysFromNow(n) { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().split('T')[0]; }
 function uid() { return '_' + Math.random().toString(36).slice(2, 10); }
 
-// ─── DB ──────────────────────────────────────────────────────────────────────────
+// ─── DB ───────────────────────────────────────────────────────────────────────
 
 const DB = {
   get tasks()     { return JSON.parse(localStorage.getItem('biz_tasks')    || 'null') || [...DEMO_TASKS];    },
   set tasks(v)    { localStorage.setItem('biz_tasks',    JSON.stringify(v)); },
   get activity()  { return JSON.parse(localStorage.getItem('biz_activity') || 'null') || [...DEMO_ACTIVITY]; },
   set activity(v) { localStorage.setItem('biz_activity', JSON.stringify(v)); },
-  reset() {
-    localStorage.removeItem('biz_leads');
-    localStorage.removeItem('biz_tasks');
-    localStorage.removeItem('biz_activity');
-    cache.leads = null;
-  }
+  reset() { localStorage.removeItem('biz_leads'); localStorage.removeItem('biz_tasks'); localStorage.removeItem('biz_activity'); cache.leads = null; }
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function today() { return new Date().toISOString().split('T')[0]; }
 function isOverdue(dateStr) { return dateStr && dateStr < today(); }
+function isDue(dateStr)     { return dateStr && dateStr <= today(); }
 
 function formatDate(dateStr) {
   if (!dateStr) return '—';
@@ -200,13 +175,30 @@ function statusBadge(status) {
   const map = { New: 'badge-new', Contacted: 'badge-contacted', Waiting: 'badge-waiting', Won: 'badge-won', Lost: 'badge-lost', Open: 'badge-open', Done: 'badge-done' };
   return `<span class="badge ${map[status] || ''}">${status}</span>`;
 }
-
 function priorityBadge(p) {
   const map = { High: 'badge-high', Medium: 'badge-medium', Low: 'badge-low' };
   return `<span class="badge ${map[p] || ''}">${p}</span>`;
 }
-
 function fmtCurrency(n) { return '$' + (+n || 0).toLocaleString(); }
+
+// ─── Navigation helpers ───────────────────────────────────────────────────────
+
+function navigateLeads(filter) {
+  leadFilter = filter || 'All';
+  const sel = document.getElementById('lead-filter');
+  if (sel) sel.value = leadFilter;
+  navigate('leads');
+}
+
+function navigateTasks(filter) {
+  taskFilter = filter || 'All';
+  navigate('tasks').then(() => {
+    document.querySelectorAll('.task-filter-btn').forEach(b => {
+      b.classList.toggle('btn-primary', b.dataset.filter === taskFilter);
+      b.classList.toggle('btn-ghost',   b.dataset.filter !== taskFilter);
+    });
+  });
+}
 
 // ─── Router ───────────────────────────────────────────────────────────────────
 
@@ -236,15 +228,15 @@ function renderPage(page) {
 function renderDashboard() {
   const leads = getLeads();
   const tasks = DB.tasks;
-  const activeLeads = leads.filter(l => l.status !== 'Won' && l.status !== 'Lost');
-  const overdueFollowups = activeLeads.filter(l => isOverdue(l.followUp));
-  const openRevenue = activeLeads.reduce((s, l) => s + (+l.value || 0), 0);
-  const tasksDueToday = tasks.filter(t => t.status === 'Open' && t.dueDate === today());
+  const activeLeads    = leads.filter(l => l.status !== 'Won' && l.status !== 'Lost');
+  const followUpsDue   = activeLeads.filter(l => isDue(l.followUp));
+  const openRevenue    = activeLeads.reduce((s, l) => s + (+l.value || 0), 0);
+  const tasksDueToday  = tasks.filter(t => t.status === 'Open' && t.dueDate === today());
 
-  document.getElementById('stat-leads').textContent = activeLeads.length;
-  document.getElementById('stat-overdue').textContent = overdueFollowups.length;
+  document.getElementById('stat-leads').textContent   = activeLeads.length;
+  document.getElementById('stat-overdue').textContent = followUpsDue.length;
   document.getElementById('stat-revenue').textContent = fmtCurrency(openRevenue);
-  document.getElementById('stat-tasks').textContent = tasksDueToday.length;
+  document.getElementById('stat-tasks').textContent   = tasksDueToday.length;
 
   const priorityLeads = activeLeads
     .filter(l => l.followUp)
@@ -281,7 +273,11 @@ function renderLeads() {
   if (refreshBtn) refreshBtn.style.display = AT.enabled ? 'inline-flex' : 'none';
 
   let leads = getLeads();
-  if (leadFilter !== 'All') leads = leads.filter(l => l.status === leadFilter);
+  if (leadFilter === 'Overdue') {
+    leads = leads.filter(l => isOverdue(l.followUp) && l.status !== 'Won' && l.status !== 'Lost');
+  } else if (leadFilter !== 'All') {
+    leads = leads.filter(l => l.status === leadFilter);
+  }
   if (leadSearch) {
     const q = leadSearch.toLowerCase();
     leads = leads.filter(l =>
@@ -340,63 +336,40 @@ async function saveLead() {
     notes:    document.getElementById('lead-notes').value.trim(),
   };
   if (!data.name) { alert('Name is required'); return; }
-
   const saveBtn = document.getElementById('lead-save-btn');
-  saveBtn.disabled = true;
-  saveBtn.textContent = 'Saving…';
-
+  saveBtn.disabled = true; saveBtn.textContent = 'Saving…';
   try {
     if (AT.enabled) {
       if (id) {
         const updated = await AT.updateLead(id, data);
         cache.leads = (cache.leads || []).map(l => l.id === id ? updated : l);
-        addActivity(`Updated lead: ${data.name}`, 'primary');
-        showToast('Lead updated');
+        addActivity(`Updated lead: ${data.name}`, 'primary'); showToast('Lead updated');
       } else {
         const created = await AT.createLead(data);
         cache.leads = [...(cache.leads || []), created];
-        addActivity(`New lead added: ${data.name}`, 'primary');
-        showToast('Lead added');
+        addActivity(`New lead added: ${data.name}`, 'primary'); showToast('Lead added');
       }
     } else {
       const leads = getLeads();
-      if (id) {
-        const i = leads.findIndex(l => l.id === id);
-        leads[i] = { ...leads[i], ...data };
-        addActivity(`Updated lead: ${data.name}`, 'primary');
-        showToast('Lead updated');
-      } else {
-        leads.push({ id: uid(), ...data });
-        addActivity(`New lead added: ${data.name} (${fmtCurrency(data.value)})`, 'primary');
-        showToast('Lead added');
-      }
+      if (id) { const i = leads.findIndex(l => l.id === id); leads[i] = { ...leads[i], ...data }; addActivity(`Updated lead: ${data.name}`, 'primary'); showToast('Lead updated'); }
+      else { leads.push({ id: uid(), ...data }); addActivity(`New lead added: ${data.name} (${fmtCurrency(data.value)})`, 'primary'); showToast('Lead added'); }
       localStorage.setItem('biz_leads', JSON.stringify(leads));
     }
-    closeLeadModal();
-    renderLeads();
+    closeLeadModal(); renderLeads();
     if (currentPage === 'dashboard') renderDashboard();
-  } catch (e) {
-    showToast('Error: ' + e.message);
-  } finally {
-    saveBtn.disabled = false;
-    saveBtn.textContent = 'Save Lead';
-  }
+  } catch (e) { showToast('Error: ' + e.message); }
+  finally { saveBtn.disabled = false; saveBtn.textContent = 'Save Lead'; }
 }
 
 async function deleteLead(id) {
   if (!confirm('Delete this lead?')) return;
   const lead = leadById(id);
   if (AT.enabled) {
-    try {
-      await AT.deleteLead(id);
-      cache.leads = (cache.leads || []).filter(l => l.id !== id);
-    } catch (e) { showToast('Error: ' + e.message); return; }
-  } else {
-    localStorage.setItem('biz_leads', JSON.stringify(getLeads().filter(l => l.id !== id)));
-  }
+    try { await AT.deleteLead(id); cache.leads = (cache.leads || []).filter(l => l.id !== id); }
+    catch (e) { showToast('Error: ' + e.message); return; }
+  } else { localStorage.setItem('biz_leads', JSON.stringify(getLeads().filter(l => l.id !== id))); }
   if (lead) addActivity(`Deleted lead: ${lead.name}`, 'danger');
-  showToast('Lead deleted');
-  renderLeads();
+  showToast('Lead deleted'); renderLeads();
   if (currentPage === 'dashboard') renderDashboard();
 }
 
@@ -406,8 +379,8 @@ let taskFilter = 'All';
 
 function renderTasks() {
   let tasks = DB.tasks;
-  if (taskFilter === 'Open') tasks = tasks.filter(t => t.status === 'Open');
-  else if (taskFilter === 'Done') tasks = tasks.filter(t => t.status === 'Done');
+  if (taskFilter === 'Open')    tasks = tasks.filter(t => t.status === 'Open');
+  else if (taskFilter === 'Done')    tasks = tasks.filter(t => t.status === 'Done');
   else if (taskFilter === 'Overdue') tasks = tasks.filter(t => t.status === 'Open' && isOverdue(t.dueDate));
 
   tasks = [...tasks].sort((a, b) => {
@@ -486,19 +459,10 @@ function saveTask() {
   };
   if (!data.title) { alert('Task title is required'); return; }
   const tasks = DB.tasks;
-  if (id) {
-    const i = tasks.findIndex(t => t.id === id);
-    tasks[i] = { ...tasks[i], ...data };
-    addActivity(`Updated task: ${data.title}`, 'primary');
-    showToast('Task updated');
-  } else {
-    tasks.push({ id: uid(), ...data });
-    addActivity(`New task added: ${data.title}`, 'primary');
-    showToast('Task added');
-  }
+  if (id) { const i = tasks.findIndex(t => t.id === id); tasks[i] = { ...tasks[i], ...data }; addActivity(`Updated task: ${data.title}`, 'primary'); showToast('Task updated'); }
+  else { tasks.push({ id: uid(), ...data }); addActivity(`New task added: ${data.title}`, 'primary'); showToast('Task added'); }
   DB.tasks = tasks;
-  closeTaskModal();
-  renderTasks();
+  closeTaskModal(); renderTasks();
   if (currentPage === 'dashboard') renderDashboard();
 }
 
@@ -508,8 +472,7 @@ function deleteTask(id) {
   const t = tasks.find(t => t.id === id);
   DB.tasks = tasks.filter(t => t.id !== id);
   if (t) addActivity(`Deleted task: ${t.title}`, 'danger');
-  showToast('Task deleted');
-  renderTasks();
+  showToast('Task deleted'); renderTasks();
   if (currentPage === 'dashboard') renderDashboard();
 }
 
@@ -532,12 +495,12 @@ function _updateAtStatusUI() {
   if (!badge || !msg) return;
   if (AT.enabled) {
     badge.style.display = 'inline';
-    msg.textContent     = '● Connected — leads sync with Airtable';
-    msg.style.color     = 'var(--success)';
+    msg.textContent = '● Connected — leads sync with Airtable';
+    msg.style.color = 'var(--success)';
   } else {
     badge.style.display = 'none';
-    msg.textContent     = 'Not connected — using local demo data';
-    msg.style.color     = 'var(--text-muted)';
+    msg.textContent = 'Not connected — using local demo data';
+    msg.style.color = 'var(--text-muted)';
   }
 }
 
@@ -551,16 +514,12 @@ async function saveAtConfig() {
   msg.textContent = 'Testing connection…'; msg.style.color = 'var(--text-muted)';
   AT.cfg = { baseId, pat }; cache.leads = null;
   try {
-    await AT.ping();
-    _updateAtStatusUI();
-    showToast('Airtable connected!');
+    await AT.ping(); _updateAtStatusUI(); showToast('Airtable connected!');
   } catch (e) {
     AT.cfg = null;
     msg.textContent = '✗ ' + e.message; msg.style.color = 'var(--danger)';
     showToast('Connection failed: ' + e.message);
-  } finally {
-    btn.disabled = false; btn.textContent = 'Save & Connect';
-  }
+  } finally { btn.disabled = false; btn.textContent = 'Save & Connect'; }
 }
 
 async function testAtConfig() {
@@ -572,9 +531,8 @@ async function testAtConfig() {
   msg.textContent = 'Testing…'; msg.style.color = 'var(--text-muted)';
   try {
     await AT.ping();
-    msg.textContent = '✓ Connection works — click “Save & Connect” to activate';
-    msg.style.color = 'var(--success)';
-    showToast('Connection successful!');
+    msg.textContent = '✓ Connection works — click "Save & Connect" to activate';
+    msg.style.color = 'var(--success)'; showToast('Connection successful!');
   } catch (e) {
     msg.textContent = '✗ ' + e.message; msg.style.color = 'var(--danger)';
   } finally { AT.cfg = prev; }
@@ -583,16 +541,12 @@ async function testAtConfig() {
 function clearAtConfig() {
   if (!confirm('Disconnect Airtable? Dashboard will use local demo data.')) return;
   AT.cfg = null; cache.leads = null;
-  renderSettings();
-  showToast('Disconnected from Airtable');
+  renderSettings(); showToast('Disconnected from Airtable');
 }
 
 function resetDemoData() {
   if (!confirm('This will wipe all your data and reload the original demo data. Continue?')) return;
-  DB.reset();
-  showToast('Demo data restored');
-  renderSettings();
-  renderPage(currentPage);
+  DB.reset(); showToast('Demo data restored'); renderSettings(); renderPage(currentPage);
 }
 
 function exportData() {
@@ -601,11 +555,10 @@ function exportData() {
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href = url; a.download = 'biz-dashboard-export.json'; a.click();
-  URL.revokeObjectURL(url);
-  showToast('Data exported');
+  URL.revokeObjectURL(url); showToast('Data exported');
 }
 
-// ─── Sidebar ───────────────────────────────────────────────────────────────────
+// ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
