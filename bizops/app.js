@@ -1,6 +1,119 @@
 'use strict';
 
-// ─── Data layer ───────────────────────────────────────────────────────────────
+// ─── Airtable Layer ───────────────────────────────────────────────────────────
+
+const AT_STATUS_IN  = { Booked: 'Won', Replied: 'Waiting' };
+const AT_STATUS_OUT = { Won: 'Booked', Waiting: 'Replied' };
+
+const AT = {
+  get cfg()     { return JSON.parse(localStorage.getItem('at_config') || 'null'); },
+  set cfg(v)    { if (v) localStorage.setItem('at_config', JSON.stringify(v)); else localStorage.removeItem('at_config'); },
+  get enabled() { const c = this.cfg; return !!(c && c.baseId && c.pat); },
+
+  _url(path) { return `https://api.airtable.com/v0/${this.cfg.baseId}/${path}`; },
+  _hdrs()    { return { Authorization: `Bearer ${this.cfg.pat}`, 'Content-Type': 'application/json' }; },
+
+  _in(rec) {
+    const f = rec.fields;
+    const g = (...ks) => { for (const k of ks) if (f[k] != null) return f[k]; };
+    const st = String(g('status', 'Status') || 'New');
+    const fu = g('lastFollowUpAt', 'followUp');
+    return {
+      id:       rec.id,
+      name:     String(g('name', 'Name') || ''),
+      company:  String(g('company', 'Company') || ''),
+      phone:    String(g('phone', 'Phone') || ''),
+      email:    String(g('email', 'Email') || ''),
+      status:   AT_STATUS_IN[st] || st,
+      value:    Number(g('value', 'Value') || 0),
+      followUp: fu ? String(fu).split('T')[0] : null,
+      notes:    String(g('notes', 'Notes') || g('issue', 'Issue') || ''),
+      source:   String(g('source', 'Source') || ''),
+    };
+  },
+
+  _out(fields) {
+    const out = {
+      name:   fields.name,
+      phone:  fields.phone  || '',
+      email:  fields.email  || '',
+      status: AT_STATUS_OUT[fields.status] || fields.status,
+      notes:  fields.notes  || '',
+    };
+    if (fields.company)  out.company  = fields.company;
+    if (fields.value)    out.value    = Number(fields.value);
+    if (fields.followUp) out.lastFollowUpAt = fields.followUp;
+    return out;
+  },
+
+  async _req(path, opts = {}) {
+    const res = await fetch(this._url(path), { ...opts, headers: this._hdrs() });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message || `HTTP ${res.status}`);
+    }
+    return res.json();
+  },
+
+  async fetchLeads() {
+    const data = await this._req('Leads?sort%5B0%5D%5Bfield%5D=name&sort%5B0%5D%5Bdirection%5D=asc');
+    return (data.records || []).map(r => this._in(r));
+  },
+
+  async createLead(fields) {
+    return this._in(await this._req('Leads', {
+      method: 'POST',
+      body: JSON.stringify({ fields: this._out(fields) })
+    }));
+  },
+
+  async updateLead(id, fields) {
+    return this._in(await this._req(`Leads/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ fields: this._out(fields) })
+    }));
+  },
+
+  async deleteLead(id) {
+    await this._req(`Leads/${id}`, { method: 'DELETE' });
+  },
+
+  async ping() { await this._req('Leads?maxRecords=1'); }
+};
+
+// ─── Cache ────────────────────────────────────────────────────────────────────
+
+const cache = { leads: null };
+let _leadsLoading = false;
+
+function getLeads() {
+  if (AT.enabled && cache.leads !== null) return cache.leads;
+  return JSON.parse(localStorage.getItem('biz_leads') || 'null') || [...DEMO_LEADS];
+}
+
+async function refreshLeads() {
+  if (!AT.enabled || _leadsLoading) return;
+  _leadsLoading = true;
+  setLeadsLoadingUI(true);
+  try {
+    cache.leads = await AT.fetchLeads();
+  } catch (e) {
+    showToast('Airtable: ' + e.message);
+    if (cache.leads === null) cache.leads = [];
+  } finally {
+    _leadsLoading = false;
+    setLeadsLoadingUI(false);
+  }
+}
+
+function setLeadsLoadingUI(on) {
+  const el  = document.getElementById('leads-loading');
+  const btn = document.getElementById('leads-refresh');
+  if (el)  el.style.display = on ? 'inline' : 'none';
+  if (btn) btn.disabled     = on;
+}
+
+// ─── Demo Data ────────────────────────────────────────────────────────────────
 
 const DEMO_LEADS = [
   { id: 'l1', name: 'Sarah Chen', company: 'Bright Bakery Co.', phone: '555-210-4488', email: 'sarah@brightbakery.com', status: 'Waiting', value: 3200, followUp: daysFromNow(-3), notes: 'Interested in monthly bookkeeping package. Waiting on her to review proposal.' },
@@ -39,17 +152,18 @@ function daysFromNow(n) {
 
 function uid() { return '_' + Math.random().toString(36).slice(2, 10); }
 
+// ─── DB (tasks + activity only) ───────────────────────────────────────────────
+
 const DB = {
-  get leads() { return JSON.parse(localStorage.getItem('biz_leads') || 'null') || [...DEMO_LEADS]; },
-  set leads(v) { localStorage.setItem('biz_leads', JSON.stringify(v)); },
-  get tasks() { return JSON.parse(localStorage.getItem('biz_tasks') || 'null') || [...DEMO_TASKS]; },
-  set tasks(v) { localStorage.setItem('biz_tasks', JSON.stringify(v)); },
-  get activity() { return JSON.parse(localStorage.getItem('biz_activity') || 'null') || [...DEMO_ACTIVITY]; },
+  get tasks()     { return JSON.parse(localStorage.getItem('biz_tasks')    || 'null') || [...DEMO_TASKS];    },
+  set tasks(v)    { localStorage.setItem('biz_tasks',    JSON.stringify(v)); },
+  get activity()  { return JSON.parse(localStorage.getItem('biz_activity') || 'null') || [...DEMO_ACTIVITY]; },
   set activity(v) { localStorage.setItem('biz_activity', JSON.stringify(v)); },
   reset() {
     localStorage.removeItem('biz_leads');
     localStorage.removeItem('biz_tasks');
     localStorage.removeItem('biz_activity');
+    cache.leads = null;
   }
 };
 
@@ -65,7 +179,7 @@ function formatDate(dateStr) {
   return `${months[+m - 1]} ${+d}, ${y}`;
 }
 
-function leadById(id) { return DB.leads.find(l => l.id === id); }
+function leadById(id) { return getLeads().find(l => l.id === id); }
 
 function addActivity(text, type = 'primary') {
   const now = new Date();
@@ -98,7 +212,7 @@ function fmtCurrency(n) { return '$' + (+n || 0).toLocaleString(); }
 
 let currentPage = 'dashboard';
 
-function navigate(page) {
+async function navigate(page) {
   currentPage = page;
   document.querySelectorAll('.page').forEach(el => el.classList.remove('active'));
   document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
@@ -106,6 +220,7 @@ function navigate(page) {
   document.querySelector(`nav a[data-page="${page}"]`).classList.add('active');
   document.getElementById('hero').style.display = page === 'dashboard' ? 'block' : 'none';
   closeSidebar();
+  if (AT.enabled && cache.leads === null) await refreshLeads();
   renderPage(page);
 }
 
@@ -119,7 +234,7 @@ function renderPage(page) {
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 
 function renderDashboard() {
-  const leads = DB.leads;
+  const leads = getLeads();
   const tasks = DB.tasks;
   const activeLeads = leads.filter(l => l.status !== 'Won' && l.status !== 'Lost');
   const overdueFollowups = activeLeads.filter(l => isOverdue(l.followUp));
@@ -141,7 +256,7 @@ function renderDashboard() {
     : priorityLeads.map(l => {
         const over = isOverdue(l.followUp);
         return `<tr class="${over ? 'row-overdue' : ''}">
-          <td><strong>${l.name}</strong><br><span style="color:var(--text-muted);font-size:12px">${l.company}</span></td>
+          <td><strong>${l.name}</strong><br><span style="color:var(--text-muted);font-size:12px">${l.company || l.source || ''}</span></td>
           <td>${statusBadge(l.status)}</td>
           <td>${over ? `<span class="badge badge-overdue">Overdue</span>` : formatDate(l.followUp)}</td>
           <td>${fmtCurrency(l.value)}</td>
@@ -165,13 +280,16 @@ let leadSearch = '';
 let leadFilter = 'All';
 
 function renderLeads() {
-  let leads = DB.leads;
+  const refreshBtn = document.getElementById('leads-refresh');
+  if (refreshBtn) refreshBtn.style.display = AT.enabled ? 'inline-flex' : 'none';
+
+  let leads = getLeads();
   if (leadFilter !== 'All') leads = leads.filter(l => l.status === leadFilter);
   if (leadSearch) {
     const q = leadSearch.toLowerCase();
     leads = leads.filter(l =>
       l.name.toLowerCase().includes(q) ||
-      l.company.toLowerCase().includes(q) ||
+      (l.company || '').toLowerCase().includes(q) ||
       (l.email || '').toLowerCase().includes(q)
     );
   }
@@ -181,8 +299,8 @@ function renderLeads() {
     : leads.map(l => {
         const over = isOverdue(l.followUp) && l.status !== 'Won' && l.status !== 'Lost';
         return `<tr class="${over ? 'row-overdue' : ''}">
-          <td><strong>${l.name}</strong></td>
-          <td>${l.company}</td>
+          <td><strong>${l.name}</strong>${l.source ? `<br><span style="color:var(--text-muted);font-size:11px">${l.source}</span>` : ''}</td>
+          <td>${l.company || '—'}</td>
           <td>${statusBadge(l.status)}</td>
           <td>${fmtCurrency(l.value)}</td>
           <td>${over ? `<span class="badge badge-overdue">Overdue</span>` : formatDate(l.followUp)}</td>
@@ -198,55 +316,92 @@ function renderLeads() {
 function openLeadModal(id) {
   const lead = id ? leadById(id) : null;
   document.getElementById('lead-modal-title').textContent = lead ? 'Edit Lead' : 'New Lead';
-  document.getElementById('lead-id').value = lead ? lead.id : '';
-  document.getElementById('lead-name').value = lead ? lead.name : '';
-  document.getElementById('lead-company').value = lead ? lead.company : '';
-  document.getElementById('lead-phone').value = lead ? lead.phone : '';
-  document.getElementById('lead-email').value = lead ? lead.email : '';
-  document.getElementById('lead-status').value = lead ? lead.status : 'New';
-  document.getElementById('lead-value').value = lead ? lead.value : '';
-  document.getElementById('lead-followup').value = lead ? (lead.followUp || '') : '';
-  document.getElementById('lead-notes').value = lead ? (lead.notes || '') : '';
+  document.getElementById('lead-id').value        = lead ? lead.id : '';
+  document.getElementById('lead-name').value      = lead ? lead.name : '';
+  document.getElementById('lead-company').value   = lead ? (lead.company  || '') : '';
+  document.getElementById('lead-phone').value     = lead ? (lead.phone    || '') : '';
+  document.getElementById('lead-email').value     = lead ? (lead.email    || '') : '';
+  document.getElementById('lead-status').value    = lead ? lead.status : 'New';
+  document.getElementById('lead-value').value     = lead ? (lead.value    || '') : '';
+  document.getElementById('lead-followup').value  = lead ? (lead.followUp || '') : '';
+  document.getElementById('lead-notes').value     = lead ? (lead.notes    || '') : '';
   document.getElementById('lead-modal').classList.add('open');
 }
 
 function closeLeadModal() { document.getElementById('lead-modal').classList.remove('open'); }
 
-function saveLead() {
+async function saveLead() {
   const id = document.getElementById('lead-id').value;
   const data = {
-    name: document.getElementById('lead-name').value.trim(),
-    company: document.getElementById('lead-company').value.trim(),
-    phone: document.getElementById('lead-phone').value.trim(),
-    email: document.getElementById('lead-email').value.trim(),
-    status: document.getElementById('lead-status').value,
-    value: +document.getElementById('lead-value').value || 0,
+    name:     document.getElementById('lead-name').value.trim(),
+    company:  document.getElementById('lead-company').value.trim(),
+    phone:    document.getElementById('lead-phone').value.trim(),
+    email:    document.getElementById('lead-email').value.trim(),
+    status:   document.getElementById('lead-status').value,
+    value:    +document.getElementById('lead-value').value || 0,
     followUp: document.getElementById('lead-followup').value || null,
-    notes: document.getElementById('lead-notes').value.trim(),
+    notes:    document.getElementById('lead-notes').value.trim(),
   };
   if (!data.name) { alert('Name is required'); return; }
-  const leads = DB.leads;
-  if (id) {
-    const i = leads.findIndex(l => l.id === id);
-    leads[i] = { ...leads[i], ...data };
-    addActivity(`Updated lead: ${data.name}`, 'primary');
-    showToast('Lead updated');
-  } else {
-    leads.push({ id: uid(), ...data });
-    addActivity(`New lead added: ${data.name} (${fmtCurrency(data.value)})`, 'primary');
-    showToast('Lead added');
+
+  const saveBtn = document.getElementById('lead-save-btn');
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving…';
+
+  try {
+    if (AT.enabled) {
+      if (id) {
+        const updated = await AT.updateLead(id, data);
+        cache.leads = (cache.leads || []).map(l => l.id === id ? updated : l);
+        addActivity(`Updated lead: ${data.name}`, 'primary');
+        showToast('Lead updated');
+      } else {
+        const created = await AT.createLead(data);
+        cache.leads = [...(cache.leads || []), created];
+        addActivity(`New lead added: ${data.name}`, 'primary');
+        showToast('Lead added');
+      }
+    } else {
+      const leads = getLeads();
+      if (id) {
+        const i = leads.findIndex(l => l.id === id);
+        leads[i] = { ...leads[i], ...data };
+        addActivity(`Updated lead: ${data.name}`, 'primary');
+        showToast('Lead updated');
+      } else {
+        leads.push({ id: uid(), ...data });
+        addActivity(`New lead added: ${data.name} (${fmtCurrency(data.value)})`, 'primary');
+        showToast('Lead added');
+      }
+      localStorage.setItem('biz_leads', JSON.stringify(leads));
+    }
+    closeLeadModal();
+    renderLeads();
+    if (currentPage === 'dashboard') renderDashboard();
+  } catch (e) {
+    showToast('Error: ' + e.message);
+  } finally {
+    saveBtn.disabled = false;
+    saveBtn.textContent = 'Save Lead';
   }
-  DB.leads = leads;
-  closeLeadModal();
-  renderLeads();
-  if (currentPage === 'dashboard') renderDashboard();
 }
 
-function deleteLead(id) {
+async function deleteLead(id) {
   if (!confirm('Delete this lead?')) return;
-  const leads = DB.leads;
-  const lead = leads.find(l => l.id === id);
-  DB.leads = leads.filter(l => l.id !== id);
+  const lead = leadById(id);
+
+  if (AT.enabled) {
+    try {
+      await AT.deleteLead(id);
+      cache.leads = (cache.leads || []).filter(l => l.id !== id);
+    } catch (e) {
+      showToast('Error: ' + e.message);
+      return;
+    }
+  } else {
+    localStorage.setItem('biz_leads', JSON.stringify(getLeads().filter(l => l.id !== id)));
+  }
+
   if (lead) addActivity(`Deleted lead: ${lead.name}`, 'danger');
   showToast('Lead deleted');
   renderLeads();
@@ -314,14 +469,14 @@ function toggleTask(id, done) {
 function openTaskModal(id) {
   const task = id ? DB.tasks.find(t => t.id === id) : null;
   document.getElementById('task-modal-title').textContent = task ? 'Edit Task' : 'New Task';
-  document.getElementById('task-id').value = task ? task.id : '';
-  document.getElementById('task-title').value = task ? task.title : '';
-  document.getElementById('task-due').value = task ? (task.dueDate || '') : '';
+  document.getElementById('task-id').value       = task ? task.id : '';
+  document.getElementById('task-title').value    = task ? task.title : '';
+  document.getElementById('task-due').value      = task ? (task.dueDate || '') : '';
   document.getElementById('task-priority').value = task ? task.priority : 'Medium';
-  document.getElementById('task-status').value = task ? task.status : 'Open';
+  document.getElementById('task-status').value   = task ? task.status : 'Open';
   const sel = document.getElementById('task-lead');
   sel.innerHTML = '<option value="">— No linked lead —</option>' +
-    DB.leads.map(l => `<option value="${l.id}" ${task && task.leadId === l.id ? 'selected' : ''}>${l.name} (${l.company})</option>`).join('');
+    getLeads().map(l => `<option value="${l.id}" ${task && task.leadId === l.id ? 'selected' : ''}>${l.name}${l.company ? ` (${l.company})` : ''}</option>`).join('');
   document.getElementById('task-modal').classList.add('open');
 }
 
@@ -330,11 +485,11 @@ function closeTaskModal() { document.getElementById('task-modal').classList.remo
 function saveTask() {
   const id = document.getElementById('task-id').value;
   const data = {
-    title: document.getElementById('task-title').value.trim(),
-    leadId: document.getElementById('task-lead').value || null,
-    dueDate: document.getElementById('task-due').value || null,
+    title:    document.getElementById('task-title').value.trim(),
+    leadId:   document.getElementById('task-lead').value || null,
+    dueDate:  document.getElementById('task-due').value || null,
     priority: document.getElementById('task-priority').value,
-    status: document.getElementById('task-status').value,
+    status:   document.getElementById('task-status').value,
   };
   if (!data.title) { alert('Task title is required'); return; }
   const tasks = DB.tasks;
@@ -368,7 +523,96 @@ function deleteTask(id) {
 // ─── Settings ─────────────────────────────────────────────────────────────────
 
 function renderSettings() {
-  const leads = DB.leads;
+  const leads = getLeads();
+  const tasks = DB.tasks;
+  document.getElementById('settings-summary').textContent =
+    `${leads.length} leads · ${tasks.filter(t => t.status === 'Open').length} open tasks`;
+
+  const cfg = AT.cfg;
+  document.getElementById('at-base-id').value = cfg ? cfg.baseId : '';
+  document.getElementById('at-pat').value     = cfg ? cfg.pat    : '';
+  _updateAtStatusUI();
+}
+
+function _updateAtStatusUI() {
+  const badge = document.getElementById('at-badge');
+  const msg   = document.getElementById('at-status-msg');
+  if (!badge || !msg) return;
+  if (AT.enabled) {
+    badge.style.display = 'inline';
+    msg.textContent     = '● Connected — leads sync with Airtable';
+    msg.style.color     = 'var(--success)';
+  } else {
+    badge.style.display = 'none';
+    msg.textContent     = 'Not connected — using local demo data';
+    msg.style.color     = 'var(--text-muted)';
+  }
+}
+
+async function saveAtConfig() {
+  const baseId = document.getElementById('at-base-id').value.trim();
+  const pat    = document.getElementById('at-pat').value.trim();
+  if (!baseId || !pat) { showToast('Enter both Base ID and token'); return; }
+
+  const btn = document.getElementById('at-save-btn');
+  const msg = document.getElementById('at-status-msg');
+  btn.disabled    = true;
+  btn.textContent = 'Connecting…';
+  msg.textContent = 'Testing connection…';
+  msg.style.color = 'var(--text-muted)';
+
+  AT.cfg = { baseId, pat };
+  cache.leads = null;
+
+  try {
+    await AT.ping();
+    _updateAtStatusUI();
+    showToast('Airtable connected!');
+  } catch (e) {
+    AT.cfg = null;
+    msg.textContent = '✗ ' + e.message;
+    msg.style.color = 'var(--danger)';
+    showToast('Connection failed: ' + e.message);
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Save & Connect';
+  }
+}
+
+async function testAtConfig() {
+  const baseId = document.getElementById('at-base-id').value.trim();
+  const pat    = document.getElementById('at-pat').value.trim();
+  if (!baseId || !pat) { showToast('Enter Base ID and token first'); return; }
+
+  const prev = AT.cfg;
+  AT.cfg = { baseId, pat };
+  const msg = document.getElementById('at-status-msg');
+  msg.textContent = 'Testing…';
+  msg.style.color = 'var(--text-muted)';
+
+  try {
+    await AT.ping();
+    msg.textContent = '✓ Connection works — click “Save & Connect” to activate';
+    msg.style.color = 'var(--success)';
+    showToast('Connection successful!');
+  } catch (e) {
+    msg.textContent = '✗ ' + e.message;
+    msg.style.color = 'var(--danger)';
+  } finally {
+    AT.cfg = prev;
+  }
+}
+
+function clearAtConfig() {
+  if (!confirm('Disconnect Airtable? Dashboard will use local demo data.')) return;
+  AT.cfg = null;
+  cache.leads = null;
+  renderSettings();
+  showToast('Disconnected from Airtable');
+}
+
+function renderSettings_data() {
+  const leads = getLeads();
   const tasks = DB.tasks;
   document.getElementById('settings-summary').textContent =
     `${leads.length} leads · ${tasks.filter(t => t.status === 'Open').length} open tasks`;
@@ -383,13 +627,11 @@ function resetDemoData() {
 }
 
 function exportData() {
-  const data = { leads: DB.leads, tasks: DB.tasks, exported: new Date().toISOString() };
+  const data = { leads: getLeads(), tasks: DB.tasks, exported: new Date().toISOString() };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'biz-dashboard-export.json';
-  a.click();
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'biz-dashboard-export.json'; a.click();
   URL.revokeObjectURL(url);
   showToast('Data exported');
 }
@@ -399,7 +641,7 @@ function exportData() {
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
   const overlay = document.getElementById('sidebar-overlay');
-  const isOpen = sidebar.classList.toggle('open');
+  const isOpen  = sidebar.classList.toggle('open');
   overlay.classList.toggle('visible', isOpen);
 }
 

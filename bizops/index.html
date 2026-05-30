@@ -42,8 +42,8 @@
 
     <!-- Hero (shown only on dashboard) -->
     <div id="hero">
-      <h2>Stop losing leads and forgetting follow-ups.</h2>
-      <p>A simple operations dashboard for small businesses that need better visibility without complicated software.</p>
+      <h2>All your leads, automated and in one place.</h2>
+      <p>A simple operations dashboard for small businesses. Connects to your AI lead automation so every missed call and web form inquiry lands here automatically.</p>
     </div>
 
     <!-- Dashboard Page -->
@@ -105,7 +105,11 @@
     <section class="page" id="page-leads">
       <div class="page-header">
         <h2>Leads &amp; Customers</h2>
-        <button class="btn btn-primary" onclick="openLeadModal(null)">+ New Lead</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span id="leads-loading" style="display:none;font-size:12px;color:var(--text-muted)">Syncing&hellip;</span>
+          <button id="leads-refresh" class="btn btn-ghost btn-sm" onclick="refreshLeads().then(renderLeads)" title="Refresh from Airtable" style="display:none">&#8635; Refresh</button>
+          <button class="btn btn-primary" onclick="openLeadModal(null)">+ New Lead</button>
+        </div>
       </div>
 
       <div class="filter-bar">
@@ -176,13 +180,38 @@
     <!-- Settings Page -->
     <section class="page" id="page-settings">
       <div class="page-header">
-        <h2>Settings &amp; Demo Data</h2>
+        <h2>Settings &amp; Integrations</h2>
+      </div>
+
+      <!-- Airtable Connection -->
+      <div class="settings-section">
+        <h3 style="display:flex;align-items:center;gap:10px">
+          Airtable Integration
+          <span id="at-badge" class="badge badge-won" style="display:none;font-size:11px;letter-spacing:0;font-weight:700">&bull; Live</span>
+        </h3>
+        <p>Connect your Airtable base to display leads from your AI automation in real time. Get your Base ID and Personal Access Token from <strong>airtable.com/create/tokens</strong> (scope: <code>data.records:read</code>, <code>data.records:write</code>).</p>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="at-base-id">Base ID</label>
+            <input type="text" id="at-base-id" placeholder="appXXXXXXXXXXXXXX" autocomplete="off" spellcheck="false">
+          </div>
+          <div class="form-group">
+            <label for="at-pat">Personal Access Token</label>
+            <input type="password" id="at-pat" placeholder="patXXXXXXXXXXXXXX" autocomplete="off">
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <button id="at-save-btn" class="btn btn-primary" onclick="saveAtConfig()">Save &amp; Connect</button>
+          <button class="btn btn-ghost" onclick="testAtConfig()">Test Connection</button>
+          <button class="btn btn-ghost" style="color:var(--danger)" onclick="clearAtConfig()">Disconnect</button>
+        </div>
+        <p id="at-status-msg" style="margin-top:12px;margin-bottom:0">Not connected &mdash; using local demo data</p>
       </div>
 
       <div class="settings-section">
         <h3>About This Dashboard</h3>
-        <p>BizOps is a lightweight operations dashboard built for small business owners who need visibility over their leads, follow-ups, and tasks &mdash; without complicated software.</p>
-        <p style="margin-bottom:0">All data is stored locally in your browser. Nothing is sent to any server.</p>
+        <p>BizOps is a lightweight operations dashboard built for small business owners who need visibility over their leads, follow-ups, and tasks &mdash; without complicated software. Connect Airtable to see leads flow in automatically from your AI automation workflows.</p>
+        <p style="margin-bottom:0">Leads data syncs from Airtable when connected. Tasks are stored locally in your browser.</p>
       </div>
 
       <div class="settings-section">
@@ -192,24 +221,12 @@
         <button class="btn btn-danger" onclick="resetDemoData()">Reset to Demo Data</button>
       </div>
 
-      <div class="settings-section">
-        <h3>Customization for Your Business</h3>
-        <p>This dashboard can be tailored to fit your workflow. Things that can be customized for a client include:</p>
-        <ul style="margin-left:18px;font-size:13px;color:var(--text-muted);line-height:2">
-          <li>Your business name, brand colors, and logo</li>
-          <li>Lead stages and status labels specific to your sales process</li>
-          <li>Custom fields per industry (e.g. job site address for contractors)</li>
-          <li>Revenue categories or service types</li>
-          <li>Weekly email digest via a simple integration</li>
-          <li>Multi-user access and cloud data sync</li>
-        </ul>
+      <div class="settings-section" style="background:#f0fdf4;border-color:#bbf7d0">
+        <h3 style="color:var(--success)">Service: AI Lead Automation + Dashboard</h3>
+        <p>Get this dashboard wired to an AI automation system that responds to missed calls and web forms instantly via SMS &mdash; so you never lose a lead to a slow response. Automated follow-ups keep prospects warm over 5 days without lifting a finger.</p>
+        <p style="margin-bottom:0;font-size:12px;color:var(--text-muted)">Contact: davtx82@gmail.com &mdash; Starting at $1,200/month</p>
       </div>
 
-      <div class="settings-section" style="background:#f0fdf4;border-color:#bbf7d0">
-        <h3 style="color:var(--success)">Offer: Custom Dashboard for Your Business</h3>
-        <p>I'll customize this dashboard for your business for <strong>$500&ndash;$1,500</strong> depending on complexity &mdash; including your branding, custom fields, and a setup call to walk your team through it.</p>
-        <p style="margin-bottom:0;font-size:12px;color:var(--text-muted)">Contact: davtx82@gmail.com</p>
-      </div>
     </section>
 
   </main>
@@ -278,7 +295,7 @@
     </div>
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="closeLeadModal()">Cancel</button>
-      <button class="btn btn-primary" onclick="saveLead()">Save Lead</button>
+      <button id="lead-save-btn" class="btn btn-primary" onclick="saveLead()">Save Lead</button>
     </div>
   </div>
 </div>
