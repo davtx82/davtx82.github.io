@@ -8,7 +8,10 @@
 </head>
 <body>
 
-<button id="menu-toggle" onclick="toggleSidebar()" aria-label="Open menu">☰</button>
+<div id="mobile-bar">
+  <button id="menu-toggle" onclick="toggleSidebar()" aria-label="Open menu">&#9776;</button>
+  <span class="mobile-logo">BizOps</span>
+</div>
 
 <div id="app">
 
@@ -20,16 +23,16 @@
     </div>
     <nav>
       <a data-page="dashboard" class="active">
-        <span class="icon">📊</span> Dashboard
+        <span class="icon">&#128202;</span> Dashboard
       </a>
       <a data-page="leads">
-        <span class="icon">👤</span> Leads &amp; Customers
+        <span class="icon">&#128100;</span> Leads &amp; Customers
       </a>
       <a data-page="tasks">
-        <span class="icon">✅</span> Tasks &amp; Follow-ups
+        <span class="icon">&#9989;</span> Tasks &amp; Follow-ups
       </a>
       <a data-page="settings">
-        <span class="icon">⚙️</span> Settings
+        <span class="icon">&#9881;&#65039;</span> Settings
       </a>
     </nav>
   </aside>
@@ -48,22 +51,22 @@
       <div class="stats-grid" style="margin-top:28px">
         <div class="stat-card">
           <div class="label">Active Leads</div>
-          <div class="value" id="stat-leads">—</div>
+          <div class="value" id="stat-leads">&mdash;</div>
           <div class="sub">not won or lost</div>
         </div>
         <div class="stat-card alert">
           <div class="label">Overdue Follow-ups</div>
-          <div class="value" id="stat-overdue">—</div>
+          <div class="value" id="stat-overdue">&mdash;</div>
           <div class="sub">need attention now</div>
         </div>
         <div class="stat-card success">
           <div class="label">Open Revenue</div>
-          <div class="value" id="stat-revenue">—</div>
+          <div class="value" id="stat-revenue">&mdash;</div>
           <div class="sub">estimated pipeline</div>
         </div>
         <div class="stat-card warn">
           <div class="label">Tasks Due Today</div>
-          <div class="value" id="stat-tasks">—</div>
+          <div class="value" id="stat-tasks">&mdash;</div>
           <div class="sub">open tasks today</div>
         </div>
       </div>
@@ -106,7 +109,7 @@
       </div>
 
       <div class="filter-bar">
-        <input type="text" id="lead-search" placeholder="Search by name, company, or email…">
+        <input type="text" id="lead-search" placeholder="Search by name, company, or email&hellip;">
         <select id="lead-filter">
           <option value="All">All Statuses</option>
           <option>New</option>
@@ -178,13 +181,13 @@
 
       <div class="settings-section">
         <h3>About This Dashboard</h3>
-        <p>BizOps is a lightweight operations dashboard built for small business owners who need visibility over their leads, follow-ups, and tasks — without complicated software.</p>
+        <p>BizOps is a lightweight operations dashboard built for small business owners who need visibility over their leads, follow-ups, and tasks &mdash; without complicated software.</p>
         <p style="margin-bottom:0">All data is stored locally in your browser. Nothing is sent to any server.</p>
       </div>
 
       <div class="settings-section">
         <h3>Current Data</h3>
-        <p id="settings-summary">Loading…</p>
+        <p id="settings-summary">Loading&hellip;</p>
         <button class="btn btn-ghost" onclick="exportData()" style="margin-right:10px">Export JSON</button>
         <button class="btn btn-danger" onclick="resetDemoData()">Reset to Demo Data</button>
       </div>
@@ -204,7 +207,7 @@
 
       <div class="settings-section" style="background:#f0fdf4;border-color:#bbf7d0">
         <h3 style="color:var(--success)">Offer: Custom Dashboard for Your Business</h3>
-        <p>I'll customize this dashboard for your business for <strong>$500–$1,500</strong> depending on complexity — including your branding, custom fields, and a setup call to walk your team through it.</p>
+        <p>I'll customize this dashboard for your business for <strong>$500&ndash;$1,500</strong> depending on complexity &mdash; including your branding, custom fields, and a setup call to walk your team through it.</p>
         <p style="margin-bottom:0;font-size:12px;color:var(--text-muted)">Contact: davtx82@gmail.com</p>
       </div>
     </section>
@@ -212,12 +215,15 @@
   </main>
 </div>
 
+<!-- Sidebar overlay -->
+<div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
 <!-- Lead Modal -->
 <div class="modal-overlay" id="lead-modal">
   <div class="modal">
     <div class="modal-header">
       <h3 id="lead-modal-title">New Lead</h3>
-      <button class="modal-close" onclick="closeLeadModal()">×</button>
+      <button class="modal-close" onclick="closeLeadModal()">&times;</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="lead-id">
@@ -266,7 +272,7 @@
       <div class="form-row full">
         <div class="form-group">
           <label for="lead-notes">Notes</label>
-          <textarea id="lead-notes" placeholder="Context, next steps, anything relevant…"></textarea>
+          <textarea id="lead-notes" placeholder="Context, next steps, anything relevant&hellip;"></textarea>
         </div>
       </div>
     </div>
@@ -282,7 +288,7 @@
   <div class="modal">
     <div class="modal-header">
       <h3 id="task-modal-title">New Task</h3>
-      <button class="modal-close" onclick="closeTaskModal()">×</button>
+      <button class="modal-close" onclick="closeTaskModal()">&times;</button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="task-id">

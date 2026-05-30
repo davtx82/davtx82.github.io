@@ -187,7 +187,7 @@ function renderLeads() {
 
   const tbody = document.getElementById('leads-tbody');
   tbody.innerHTML = leads.length === 0
-    ? `<tr><td colspan="7"><div class="empty-state"><div class="icon">📭</div><p>No leads found</p></div></td></tr>`
+    ? `<tr><td colspan="7"><div class="empty-state"><div class="icon">&#128205;</div><p>No leads found</p></div></td></tr>`
     : leads.map(l => {
         const over = isOverdue(l.followUp) && l.status !== 'Won' && l.status !== 'Lost';
         return `<tr class="${over ? 'row-overdue' : ''}">
@@ -197,7 +197,7 @@ function renderLeads() {
           <td>${fmtCurrency(l.value)}</td>
           <td>${over ? `<span class="badge badge-overdue">Overdue</span>` : formatDate(l.followUp)}</td>
           <td style="color:var(--text-muted);font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${l.notes || '—'}</td>
-          <td>
+          <td style="white-space:nowrap">
             <button class="btn btn-ghost btn-sm" onclick="openLeadModal('${l.id}')">Edit</button>
             <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteLead('${l.id}')">Delete</button>
           </td>
@@ -284,7 +284,7 @@ function renderTasks() {
 
   const tbody = document.getElementById('tasks-tbody');
   tbody.innerHTML = tasks.length === 0
-    ? `<tr><td colspan="6"><div class="empty-state"><div class="icon">✅</div><p>No tasks here</p></div></td></tr>`
+    ? `<tr><td colspan="6"><div class="empty-state"><div class="icon">&#9989;</div><p>No tasks here</p></div></td></tr>`
     : tasks.map(t => {
         const over = t.status === 'Open' && isOverdue(t.dueDate);
         const lead = t.leadId ? leadById(t.leadId) : null;
@@ -297,7 +297,7 @@ function renderTasks() {
           <td>${over ? `<span class="badge badge-overdue">Overdue</span>` : formatDate(t.dueDate)}</td>
           <td>${priorityBadge(t.priority)}</td>
           <td>${statusBadge(t.status)}</td>
-          <td>
+          <td style="white-space:nowrap">
             <button class="btn btn-ghost btn-sm" onclick="openTaskModal('${t.id}')">Edit</button>
             <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteTask('${t.id}')">Delete</button>
           </td>
@@ -409,11 +409,15 @@ function exportData() {
 // ─── Mobile sidebar ──────────────────────────────────────────────────────────
 
 function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
+  const sidebar = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const isOpen = sidebar.classList.toggle('open');
+  overlay.classList.toggle('visible', isOpen);
 }
 
 function closeSidebar() {
   document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebar-overlay').classList.remove('visible');
 }
 
 // ─── Bootstrap ───────────────────────────────────────────────────────────────
