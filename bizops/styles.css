@@ -280,10 +280,10 @@ textarea { resize: vertical; min-height: 80px; }
 .activity-list { padding: 4px 0; }
 .activity-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px 18px; border-bottom: 1px solid var(--border); }
 .activity-item:last-child { border-bottom: none; }
-.activity-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--primary); margin-top: 4px; flex-shrink: 0; }
-.activity-dot.warn    { background: var(--warning); }
-.activity-dot.danger  { background: var(--danger);  }
-.activity-dot.success { background: var(--success); }
+.activity-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--primary); margin-top: 2px; flex-shrink: 0; box-shadow: 0 0 0 3px rgba(37,99,235,0.15); }
+.activity-dot.warn    { background: var(--warning); box-shadow: 0 0 0 3px rgba(217,119,6,0.15); }
+.activity-dot.danger  { background: var(--danger);  box-shadow: 0 0 0 3px rgba(220,38,38,0.15); }
+.activity-dot.success { background: var(--success); box-shadow: 0 0 0 3px rgba(22,163,74,0.15); }
 .activity-text { font-size: 13px; line-height: 1.45; }
 .activity-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 .activity-item.clickable { cursor: pointer; }
