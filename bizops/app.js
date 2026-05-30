@@ -120,12 +120,12 @@ const DEMO_TASKS = [
 ];
 
 const DEMO_ACTIVITY = [
-  { text: 'Aisha Nwosu added as new lead ($6,800)', time: 'Today, 9:14 AM', type: 'primary' },
-  { text: 'Task "Follow up call with Tamara" is due today', time: 'Today, 8:00 AM', type: 'warn' },
-  { text: 'James Okafor marked Won — contract signed!', time: 'Yesterday, 4:32 PM', type: 'success' },
-  { text: 'Linda Park follow-up is 5 days overdue', time: 'Yesterday, 8:00 AM', type: 'danger' },
-  { text: 'Marcus Rivera added via referral', time: '2 days ago', type: 'primary' },
-  { text: 'Derek Thompson marked Lost', time: '3 days ago', type: 'danger' },
+  { text: 'Aisha Nwosu added as new lead ($6,800)', time: 'Today, 9:14 AM', type: 'primary', ref: { kind: 'lead', id: 'l7' } },
+  { text: 'Task "Follow up call with Tamara" is due today', time: 'Today, 8:00 AM', type: 'warn', ref: { kind: 'task', id: 't2' } },
+  { text: 'James Okafor marked Won — contract signed!', time: 'Yesterday, 4:32 PM', type: 'success', ref: { kind: 'lead', id: 'l4' } },
+  { text: 'Linda Park follow-up is 5 days overdue', time: 'Yesterday, 8:00 AM', type: 'danger', ref: { kind: 'lead', id: 'l5' } },
+  { text: 'Marcus Rivera added via referral', time: '2 days ago', type: 'primary', ref: { kind: 'lead', id: 'l2' } },
+  { text: 'Derek Thompson marked Lost', time: '3 days ago', type: 'danger', ref: { kind: 'lead', id: 'l6' } },
 ];
 
 function daysFromNow(n) { const d = new Date(); d.setDate(d.getDate() + n); return d.toISOString().split('T')[0]; }
@@ -186,6 +186,7 @@ function fmtCurrency(n) { return '$' + (+n || 0).toLocaleString(); }
 // ─── Navigation helpers ───────────────────────────────────────────────────────
 
 function navigateLeads(filter) {
+  navSource = 'dashboard';
   leadFilter = filter || 'All';
   const sel = document.getElementById('lead-filter');
   if (sel) sel.value = leadFilter;
@@ -193,6 +194,7 @@ function navigateLeads(filter) {
 }
 
 function navigateTasks(filter) {
+  navSource = 'dashboard';
   taskFilter = filter || 'All';
   navigate('tasks').then(() => {
     document.querySelectorAll('.task-filter-btn').forEach(b => {
@@ -205,6 +207,7 @@ function navigateTasks(filter) {
 function handleActivityClick(el) {
   const kind = el.dataset.refKind;
   const id   = el.dataset.refId;
+  navSource = 'dashboard';
   if (kind === 'lead') {
     navigate('leads').then(() => { if (id) openLeadModal(id); });
   } else if (kind === 'task') {
@@ -215,6 +218,7 @@ function handleActivityClick(el) {
 // ─── Router ───────────────────────────────────────────────────────────────────
 
 let currentPage = 'dashboard';
+let navSource = null;
 
 async function navigate(page) {
   currentPage = page;
@@ -284,6 +288,8 @@ let leadSearch = '';
 let leadFilter = 'All';
 
 function renderLeads() {
+  const backBtn = document.getElementById('back-leads');
+  if (backBtn) backBtn.style.display = navSource === 'dashboard' ? 'inline-flex' : 'none';
   const refreshBtn = document.getElementById('leads-refresh');
   if (refreshBtn) refreshBtn.style.display = AT.enabled ? 'inline-flex' : 'none';
 
@@ -393,6 +399,8 @@ async function deleteLead(id) {
 let taskFilter = 'All';
 
 function renderTasks() {
+  const backBtn = document.getElementById('back-tasks');
+  if (backBtn) backBtn.style.display = navSource === 'dashboard' ? 'inline-flex' : 'none';
   let tasks = DB.tasks;
   if (taskFilter === 'Open')    tasks = tasks.filter(t => t.status === 'Open');
   else if (taskFilter === 'Done')    tasks = tasks.filter(t => t.status === 'Done');
@@ -591,7 +599,7 @@ function closeSidebar() {
 
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('nav a[data-page]').forEach(a => {
-    a.addEventListener('click', () => navigate(a.dataset.page));
+    a.addEventListener('click', () => { navSource = null; navigate(a.dataset.page); });
   });
   document.getElementById('lead-search').addEventListener('input', e => { leadSearch = e.target.value; renderLeads(); });
   document.getElementById('lead-filter').addEventListener('change', e => { leadFilter = e.target.value; renderLeads(); });
