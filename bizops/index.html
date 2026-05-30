@@ -23,16 +23,20 @@
     </div>
     <nav>
       <a data-page="dashboard" class="active">
-        <span class="icon">&#128202;</span> Dashboard
+        <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="7" x="3" y="3" rx="1"/><rect width="7" height="7" x="14" y="3" rx="1"/><rect width="7" height="7" x="14" y="14" rx="1"/><rect width="7" height="7" x="3" y="14" rx="1"/></svg></span>
+        Dashboard
       </a>
       <a data-page="leads">
-        <span class="icon">&#128100;</span> Leads &amp; Customers
+        <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+        Leads &amp; Customers
       </a>
       <a data-page="tasks">
-        <span class="icon">&#9989;</span> Tasks &amp; Follow-ups
+        <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></span>
+        Tasks &amp; Follow-ups
       </a>
       <a data-page="settings">
-        <span class="icon">&#9881;&#65039;</span> Settings
+        <span class="icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="21" x2="14" y1="4" y2="4"/><line x1="10" x2="3" y1="4" y2="4"/><line x1="21" x2="12" y1="12" y2="12"/><line x1="8" x2="3" y1="12" y2="12"/><line x1="21" x2="16" y1="20" y2="20"/><line x1="12" x2="3" y1="20" y2="20"/><line x1="14" x2="14" y1="2" y2="6"/><line x1="8" x2="8" y1="10" y2="14"/><line x1="16" x2="16" y1="18" y2="22"/></svg></span>
+        Settings
       </a>
     </nav>
   </aside>
@@ -40,7 +44,7 @@
   <!-- Main -->
   <main id="main">
 
-    <!-- Hero (shown only on dashboard) -->
+    <!-- Hero -->
     <div id="hero">
       <h2>All your leads, automated and in one place.</h2>
       <p>A simple operations dashboard for small businesses. Connects to your AI lead automation so every missed call and web form inquiry lands here automatically.</p>
@@ -79,19 +83,11 @@
           </div>
           <div class="card-body">
             <table>
-              <thead>
-                <tr>
-                  <th>Lead</th>
-                  <th>Status</th>
-                  <th>Follow-up</th>
-                  <th>Value</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Lead</th><th>Status</th><th>Follow-up</th><th>Value</th></tr></thead>
               <tbody id="priority-followups"></tbody>
             </table>
           </div>
         </div>
-
         <div class="card">
           <div class="card-header">Recent Activity</div>
           <div class="card-body">
@@ -111,33 +107,17 @@
           <button class="btn btn-primary" onclick="openLeadModal(null)">+ New Lead</button>
         </div>
       </div>
-
       <div class="filter-bar">
         <input type="text" id="lead-search" placeholder="Search by name, company, or email&hellip;">
         <select id="lead-filter">
           <option value="All">All Statuses</option>
-          <option>New</option>
-          <option>Contacted</option>
-          <option>Waiting</option>
-          <option>Won</option>
-          <option>Lost</option>
+          <option>New</option><option>Contacted</option><option>Waiting</option><option>Won</option><option>Lost</option>
         </select>
       </div>
-
       <div class="card">
         <div class="card-body">
           <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Company</th>
-                <th>Status</th>
-                <th>Est. Value</th>
-                <th>Follow-up</th>
-                <th>Notes</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Name</th><th>Company</th><th>Status</th><th>Est. Value</th><th>Follow-up</th><th>Notes</th><th>Actions</th></tr></thead>
             <tbody id="leads-tbody"></tbody>
           </table>
         </div>
@@ -150,27 +130,16 @@
         <h2>Tasks &amp; Follow-ups</h2>
         <button class="btn btn-primary" onclick="openTaskModal(null)">+ New Task</button>
       </div>
-
       <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
         <button class="btn task-filter-btn btn-primary" data-filter="All">All</button>
         <button class="btn task-filter-btn btn-ghost" data-filter="Open">Open</button>
         <button class="btn task-filter-btn btn-ghost" data-filter="Overdue">Overdue</button>
         <button class="btn task-filter-btn btn-ghost" data-filter="Done">Done</button>
       </div>
-
       <div class="card">
         <div class="card-body">
           <table>
-            <thead>
-              <tr>
-                <th>Task</th>
-                <th>Lead</th>
-                <th>Due Date</th>
-                <th>Priority</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
+            <thead><tr><th>Task</th><th>Lead</th><th>Due Date</th><th>Priority</th><th>Status</th><th>Actions</th></tr></thead>
             <tbody id="tasks-tbody"></tbody>
           </table>
         </div>
@@ -179,11 +148,8 @@
 
     <!-- Settings Page -->
     <section class="page" id="page-settings">
-      <div class="page-header">
-        <h2>Settings &amp; Integrations</h2>
-      </div>
+      <div class="page-header"><h2>Settings &amp; Integrations</h2></div>
 
-      <!-- Airtable Connection -->
       <div class="settings-section">
         <h3 style="display:flex;align-items:center;gap:10px">
           Airtable Integration
@@ -210,8 +176,8 @@
 
       <div class="settings-section">
         <h3>About This Dashboard</h3>
-        <p>BizOps is a lightweight operations dashboard built for small business owners who need visibility over their leads, follow-ups, and tasks &mdash; without complicated software. Connect Airtable to see leads flow in automatically from your AI automation workflows.</p>
-        <p style="margin-bottom:0">Leads data syncs from Airtable when connected. Tasks are stored locally in your browser.</p>
+        <p>BizOps is a lightweight operations dashboard for small business owners. Connect Airtable to see leads flow in automatically from your AI automation workflows.</p>
+        <p style="margin-bottom:0">Leads sync from Airtable when connected. Tasks are stored locally in your browser.</p>
       </div>
 
       <div class="settings-section">
@@ -223,16 +189,14 @@
 
       <div class="settings-section" style="background:#f0fdf4;border-color:#bbf7d0">
         <h3 style="color:var(--success)">Service: AI Lead Automation + Dashboard</h3>
-        <p>Get this dashboard wired to an AI automation system that responds to missed calls and web forms instantly via SMS &mdash; so you never lose a lead to a slow response. Automated follow-ups keep prospects warm over 5 days without lifting a finger.</p>
+        <p>Get this dashboard wired to an AI automation system that responds to missed calls and web forms instantly via SMS &mdash; so you never lose a lead to a slow response.</p>
         <p style="margin-bottom:0;font-size:12px;color:var(--text-muted)">Contact: davtx82@gmail.com &mdash; Starting at $1,200/month</p>
       </div>
-
     </section>
 
   </main>
 </div>
 
-<!-- Sidebar overlay -->
 <div id="sidebar-overlay" onclick="closeSidebar()"></div>
 
 <!-- Lead Modal -->
@@ -245,52 +209,22 @@
     <div class="modal-body">
       <input type="hidden" id="lead-id">
       <div class="form-row">
-        <div class="form-group">
-          <label for="lead-name">Name *</label>
-          <input type="text" id="lead-name" placeholder="Full name">
-        </div>
-        <div class="form-group">
-          <label for="lead-company">Company</label>
-          <input type="text" id="lead-company" placeholder="Business name">
-        </div>
+        <div class="form-group"><label for="lead-name">Name *</label><input type="text" id="lead-name" placeholder="Full name"></div>
+        <div class="form-group"><label for="lead-company">Company</label><input type="text" id="lead-company" placeholder="Business name"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label for="lead-phone">Phone</label>
-          <input type="tel" id="lead-phone" placeholder="555-000-0000">
-        </div>
-        <div class="form-group">
-          <label for="lead-email">Email</label>
-          <input type="email" id="lead-email" placeholder="email@example.com">
-        </div>
+        <div class="form-group"><label for="lead-phone">Phone</label><input type="tel" id="lead-phone" placeholder="555-000-0000"></div>
+        <div class="form-group"><label for="lead-email">Email</label><input type="email" id="lead-email" placeholder="email@example.com"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label for="lead-status">Status</label>
-          <select id="lead-status">
-            <option>New</option>
-            <option>Contacted</option>
-            <option>Waiting</option>
-            <option>Won</option>
-            <option>Lost</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="lead-value">Estimated Value ($)</label>
-          <input type="number" id="lead-value" placeholder="0" min="0">
-        </div>
+        <div class="form-group"><label for="lead-status">Status</label><select id="lead-status"><option>New</option><option>Contacted</option><option>Waiting</option><option>Won</option><option>Lost</option></select></div>
+        <div class="form-group"><label for="lead-value">Estimated Value ($)</label><input type="number" id="lead-value" placeholder="0" min="0"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label for="lead-followup">Next Follow-up Date</label>
-          <input type="date" id="lead-followup">
-        </div>
+        <div class="form-group"><label for="lead-followup">Next Follow-up Date</label><input type="date" id="lead-followup"></div>
       </div>
       <div class="form-row full">
-        <div class="form-group">
-          <label for="lead-notes">Notes</label>
-          <textarea id="lead-notes" placeholder="Context, next steps, anything relevant&hellip;"></textarea>
-        </div>
+        <div class="form-group"><label for="lead-notes">Notes</label><textarea id="lead-notes" placeholder="Context, next steps, anything relevant&hellip;"></textarea></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -309,38 +243,14 @@
     </div>
     <div class="modal-body">
       <input type="hidden" id="task-id">
-      <div class="form-row full">
-        <div class="form-group">
-          <label for="task-title">Task Title *</label>
-          <input type="text" id="task-title" placeholder="What needs to be done?">
-        </div>
+      <div class="form-row full"><div class="form-group"><label for="task-title">Task Title *</label><input type="text" id="task-title" placeholder="What needs to be done?"></div></div>
+      <div class="form-row">
+        <div class="form-group"><label for="task-lead">Linked Lead</label><select id="task-lead"></select></div>
+        <div class="form-group"><label for="task-due">Due Date</label><input type="date" id="task-due"></div>
       </div>
       <div class="form-row">
-        <div class="form-group">
-          <label for="task-lead">Linked Lead</label>
-          <select id="task-lead"></select>
-        </div>
-        <div class="form-group">
-          <label for="task-due">Due Date</label>
-          <input type="date" id="task-due">
-        </div>
-      </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label for="task-priority">Priority</label>
-          <select id="task-priority">
-            <option>High</option>
-            <option selected>Medium</option>
-            <option>Low</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label for="task-status">Status</label>
-          <select id="task-status">
-            <option>Open</option>
-            <option>Done</option>
-          </select>
-        </div>
+        <div class="form-group"><label for="task-priority">Priority</label><select id="task-priority"><option>High</option><option selected>Medium</option><option>Low</option></select></div>
+        <div class="form-group"><label for="task-status">Status</label><select id="task-status"><option>Open</option><option>Done</option></select></div>
       </div>
     </div>
     <div class="modal-footer">
@@ -351,7 +261,6 @@
 </div>
 
 <div id="toast"></div>
-
 <script src="app.js"></script>
 </body>
 </html>

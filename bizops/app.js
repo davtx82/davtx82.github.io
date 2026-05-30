@@ -116,13 +116,13 @@ function setLeadsLoadingUI(on) {
 // ─── Demo Data ────────────────────────────────────────────────────────────────
 
 const DEMO_LEADS = [
-  { id: 'l1', name: 'Sarah Chen', company: 'Bright Bakery Co.', phone: '555-210-4488', email: 'sarah@brightbakery.com', status: 'Waiting', value: 3200, followUp: daysFromNow(-3), notes: 'Interested in monthly bookkeeping package. Waiting on her to review proposal.' },
-  { id: 'l2', name: 'Marcus Rivera', company: 'Rivera Plumbing LLC', phone: '555-334-9921', email: 'marcus@riveraplumbing.com', status: 'New', value: 1800, followUp: daysFromNow(2), notes: 'Referred by Judy Kim. Needs invoice automation help.' },
-  { id: 'l3', name: 'Tamara Wells', company: 'Wells Real Estate', phone: '555-882-3310', email: 'tamara@wellsrealty.com', status: 'Contacted', value: 5500, followUp: daysFromNow(-1), notes: 'Had initial call. Wants to see a demo of the dashboard.' },
-  { id: 'l4', name: 'James Okafor', company: 'Okafor Auto Detail', phone: '555-561-7743', email: 'james@okaforauto.com', status: 'Won', value: 2400, followUp: daysFromNow(14), notes: 'Signed contract. Onboarding starts next Monday.' },
-  { id: 'l5', name: 'Linda Park', company: 'Park Fitness Studio', phone: '555-743-2280', email: 'linda@parkfitness.com', status: 'Waiting', value: 4100, followUp: daysFromNow(-5), notes: 'Sent proposal two weeks ago. No response yet — follow up again.' },
-  { id: 'l6', name: 'Derek Thompson', company: 'Thompson Landscaping', phone: '555-929-5567', email: 'derek@thompsonlawn.com', status: 'Lost', value: 1200, followUp: null, notes: 'Decided to go with a competitor. May revisit in Q3.' },
-  { id: 'l7', name: 'Aisha Nwosu', company: 'Nwosu Consulting', phone: '555-448-3392', email: 'aisha@nwosuconsult.com', status: 'New', value: 6800, followUp: daysFromNow(1), notes: 'Big opportunity — full ops setup. Schedule discovery call.' },
+  { id: 'l1', name: 'Sarah Chen', company: 'Bright Bakery Co.', phone: '555-210-4488', email: 'sarah@brightbakery.com', status: 'Waiting', value: 3200, followUp: daysFromNow(-3), notes: 'Interested in monthly bookkeeping package.' },
+  { id: 'l2', name: 'Marcus Rivera', company: 'Rivera Plumbing LLC', phone: '555-334-9921', email: 'marcus@riveraplumbing.com', status: 'New', value: 1800, followUp: daysFromNow(2), notes: 'Referred by Judy Kim. Needs invoice automation.' },
+  { id: 'l3', name: 'Tamara Wells', company: 'Wells Real Estate', phone: '555-882-3310', email: 'tamara@wellsrealty.com', status: 'Contacted', value: 5500, followUp: daysFromNow(-1), notes: 'Had initial call. Wants to see a demo.' },
+  { id: 'l4', name: 'James Okafor', company: 'Okafor Auto Detail', phone: '555-561-7743', email: 'james@okaforauto.com', status: 'Won', value: 2400, followUp: daysFromNow(14), notes: 'Signed contract. Onboarding starts Monday.' },
+  { id: 'l5', name: 'Linda Park', company: 'Park Fitness Studio', phone: '555-743-2280', email: 'linda@parkfitness.com', status: 'Waiting', value: 4100, followUp: daysFromNow(-5), notes: 'Sent proposal two weeks ago. No response.' },
+  { id: 'l6', name: 'Derek Thompson', company: 'Thompson Landscaping', phone: '555-929-5567', email: 'derek@thompsonlawn.com', status: 'Lost', value: 1200, followUp: null, notes: 'Went with a competitor. May revisit in Q3.' },
+  { id: 'l7', name: 'Aisha Nwosu', company: 'Nwosu Consulting', phone: '555-448-3392', email: 'aisha@nwosuconsult.com', status: 'New', value: 6800, followUp: daysFromNow(1), notes: 'Big opportunity — full ops setup.' },
 ];
 
 const DEMO_TASKS = [
@@ -152,7 +152,7 @@ function daysFromNow(n) {
 
 function uid() { return '_' + Math.random().toString(36).slice(2, 10); }
 
-// ─── DB (tasks + activity only) ───────────────────────────────────────────────
+// ─── DB ──────────────────────────────────────────────────────────────────────────
 
 const DB = {
   get tasks()     { return JSON.parse(localStorage.getItem('biz_tasks')    || 'null') || [...DEMO_TASKS];    },
@@ -167,7 +167,7 @@ const DB = {
   }
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function today() { return new Date().toISOString().split('T')[0]; }
 function isOverdue(dateStr) { return dateStr && dateStr < today(); }
@@ -266,10 +266,7 @@ function renderDashboard() {
   document.getElementById('activity-list').innerHTML = DB.activity.slice(0, 8).map(a =>
     `<div class="activity-item">
       <div class="activity-dot ${a.type === 'warn' ? 'warn' : a.type === 'danger' ? 'danger' : a.type === 'success' ? 'success' : ''}"></div>
-      <div>
-        <div class="activity-text">${a.text}</div>
-        <div class="activity-time">${a.time}</div>
-      </div>
+      <div><div class="activity-text">${a.text}</div><div class="activity-time">${a.time}</div></div>
     </div>`
   ).join('');
 }
@@ -389,19 +386,14 @@ async function saveLead() {
 async function deleteLead(id) {
   if (!confirm('Delete this lead?')) return;
   const lead = leadById(id);
-
   if (AT.enabled) {
     try {
       await AT.deleteLead(id);
       cache.leads = (cache.leads || []).filter(l => l.id !== id);
-    } catch (e) {
-      showToast('Error: ' + e.message);
-      return;
-    }
+    } catch (e) { showToast('Error: ' + e.message); return; }
   } else {
     localStorage.setItem('biz_leads', JSON.stringify(getLeads().filter(l => l.id !== id)));
   }
-
   if (lead) addActivity(`Deleted lead: ${lead.name}`, 'danger');
   showToast('Lead deleted');
   renderLeads();
@@ -428,13 +420,14 @@ function renderTasks() {
     ? `<tr><td colspan="6"><div class="empty-state"><div class="icon">✅</div><p>No tasks here</p></div></td></tr>`
     : tasks.map(t => {
         const over = t.status === 'Open' && isOverdue(t.dueDate);
+        const done = t.status === 'Done';
         const lead = t.leadId ? leadById(t.leadId) : null;
         const dueTd = over ? `<span class="badge badge-overdue">Overdue</span>` : formatDate(t.dueDate);
-        return `<tr class="${over ? 'row-overdue' : ''} ${t.status === 'Done' ? 'row-done' : ''}">
+        return `<tr class="${over ? 'row-overdue' : ''} ${done ? 'row-done' : ''}">
           <td class="task-title-cell">
-            <input type="checkbox" ${t.status === 'Done' ? 'checked' : ''} onchange="toggleTask('${t.id}', this.checked)">
+            <input type="checkbox" ${done ? 'checked' : ''} onchange="toggleTask('${t.id}', this.checked)">
             <div class="task-title-wrap">
-              <strong>${t.title}</strong>
+              <strong style="${done ? 'text-decoration:line-through;color:var(--text-muted)' : ''}">${t.title}</strong>
               <div class="task-meta-mobile">
                 ${lead ? `<span>${lead.name}</span>` : ''}
                 ${t.dueDate ? `<span>${dueTd}</span>` : ''}
@@ -527,7 +520,6 @@ function renderSettings() {
   const tasks = DB.tasks;
   document.getElementById('settings-summary').textContent =
     `${leads.length} leads · ${tasks.filter(t => t.status === 'Open').length} open tasks`;
-
   const cfg = AT.cfg;
   document.getElementById('at-base-id').value = cfg ? cfg.baseId : '';
   document.getElementById('at-pat').value     = cfg ? cfg.pat    : '';
@@ -553,29 +545,21 @@ async function saveAtConfig() {
   const baseId = document.getElementById('at-base-id').value.trim();
   const pat    = document.getElementById('at-pat').value.trim();
   if (!baseId || !pat) { showToast('Enter both Base ID and token'); return; }
-
   const btn = document.getElementById('at-save-btn');
   const msg = document.getElementById('at-status-msg');
-  btn.disabled    = true;
-  btn.textContent = 'Connecting…';
-  msg.textContent = 'Testing connection…';
-  msg.style.color = 'var(--text-muted)';
-
-  AT.cfg = { baseId, pat };
-  cache.leads = null;
-
+  btn.disabled = true; btn.textContent = 'Connecting…';
+  msg.textContent = 'Testing connection…'; msg.style.color = 'var(--text-muted)';
+  AT.cfg = { baseId, pat }; cache.leads = null;
   try {
     await AT.ping();
     _updateAtStatusUI();
     showToast('Airtable connected!');
   } catch (e) {
     AT.cfg = null;
-    msg.textContent = '✗ ' + e.message;
-    msg.style.color = 'var(--danger)';
+    msg.textContent = '✗ ' + e.message; msg.style.color = 'var(--danger)';
     showToast('Connection failed: ' + e.message);
   } finally {
-    btn.disabled    = false;
-    btn.textContent = 'Save & Connect';
+    btn.disabled = false; btn.textContent = 'Save & Connect';
   }
 }
 
@@ -583,39 +567,24 @@ async function testAtConfig() {
   const baseId = document.getElementById('at-base-id').value.trim();
   const pat    = document.getElementById('at-pat').value.trim();
   if (!baseId || !pat) { showToast('Enter Base ID and token first'); return; }
-
-  const prev = AT.cfg;
-  AT.cfg = { baseId, pat };
+  const prev = AT.cfg; AT.cfg = { baseId, pat };
   const msg = document.getElementById('at-status-msg');
-  msg.textContent = 'Testing…';
-  msg.style.color = 'var(--text-muted)';
-
+  msg.textContent = 'Testing…'; msg.style.color = 'var(--text-muted)';
   try {
     await AT.ping();
     msg.textContent = '✓ Connection works — click “Save & Connect” to activate';
     msg.style.color = 'var(--success)';
     showToast('Connection successful!');
   } catch (e) {
-    msg.textContent = '✗ ' + e.message;
-    msg.style.color = 'var(--danger)';
-  } finally {
-    AT.cfg = prev;
-  }
+    msg.textContent = '✗ ' + e.message; msg.style.color = 'var(--danger)';
+  } finally { AT.cfg = prev; }
 }
 
 function clearAtConfig() {
   if (!confirm('Disconnect Airtable? Dashboard will use local demo data.')) return;
-  AT.cfg = null;
-  cache.leads = null;
+  AT.cfg = null; cache.leads = null;
   renderSettings();
   showToast('Disconnected from Airtable');
-}
-
-function renderSettings_data() {
-  const leads = getLeads();
-  const tasks = DB.tasks;
-  document.getElementById('settings-summary').textContent =
-    `${leads.length} leads · ${tasks.filter(t => t.status === 'Open').length} open tasks`;
 }
 
 function resetDemoData() {
@@ -636,7 +605,7 @@ function exportData() {
   showToast('Data exported');
 }
 
-// ─── Mobile sidebar ───────────────────────────────────────────────────────────
+// ─── Sidebar ───────────────────────────────────────────────────────────────────
 
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
@@ -656,36 +625,16 @@ document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('nav a[data-page]').forEach(a => {
     a.addEventListener('click', () => navigate(a.dataset.page));
   });
-
-  document.getElementById('lead-search').addEventListener('input', e => {
-    leadSearch = e.target.value;
-    renderLeads();
-  });
-
-  document.getElementById('lead-filter').addEventListener('change', e => {
-    leadFilter = e.target.value;
-    renderLeads();
-  });
-
+  document.getElementById('lead-search').addEventListener('input', e => { leadSearch = e.target.value; renderLeads(); });
+  document.getElementById('lead-filter').addEventListener('change', e => { leadFilter = e.target.value; renderLeads(); });
   document.querySelectorAll('.task-filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.task-filter-btn').forEach(b => {
-        b.classList.remove('btn-primary');
-        b.classList.add('btn-ghost');
-      });
-      btn.classList.remove('btn-ghost');
-      btn.classList.add('btn-primary');
-      taskFilter = btn.dataset.filter;
-      renderTasks();
+      document.querySelectorAll('.task-filter-btn').forEach(b => { b.classList.remove('btn-primary'); b.classList.add('btn-ghost'); });
+      btn.classList.remove('btn-ghost'); btn.classList.add('btn-primary');
+      taskFilter = btn.dataset.filter; renderTasks();
     });
   });
-
-  document.getElementById('lead-modal').addEventListener('click', e => {
-    if (e.target === e.currentTarget) closeLeadModal();
-  });
-  document.getElementById('task-modal').addEventListener('click', e => {
-    if (e.target === e.currentTarget) closeTaskModal();
-  });
-
+  document.getElementById('lead-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeLeadModal(); });
+  document.getElementById('task-modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeTaskModal(); });
   navigate('dashboard');
 });
