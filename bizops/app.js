@@ -1,6 +1,6 @@
 'use strict';
 
-// ─── Data layer ──────────────────────────────────────────────────────────────
+// ─── Data layer ───────────────────────────────────────────────────────────────
 
 const DEMO_LEADS = [
   { id: 'l1', name: 'Sarah Chen', company: 'Bright Bakery Co.', phone: '555-210-4488', email: 'sarah@brightbakery.com', status: 'Waiting', value: 3200, followUp: daysFromNow(-3), notes: 'Interested in monthly bookkeeping package. Waiting on her to review proposal.' },
@@ -53,10 +53,9 @@ const DB = {
   }
 };
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function today() { return new Date().toISOString().split('T')[0]; }
-
 function isOverdue(dateStr) { return dateStr && dateStr < today(); }
 
 function formatDate(dateStr) {
@@ -105,10 +104,7 @@ function navigate(page) {
   document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
   document.getElementById('page-' + page).classList.add('active');
   document.querySelector(`nav a[data-page="${page}"]`).classList.add('active');
-
-  const hero = document.getElementById('hero');
-  hero.style.display = page === 'dashboard' ? 'block' : 'none';
-
+  document.getElementById('hero').style.display = page === 'dashboard' ? 'block' : 'none';
   closeSidebar();
   renderPage(page);
 }
@@ -125,7 +121,6 @@ function renderPage(page) {
 function renderDashboard() {
   const leads = DB.leads;
   const tasks = DB.tasks;
-
   const activeLeads = leads.filter(l => l.status !== 'Won' && l.status !== 'Lost');
   const overdueFollowups = activeLeads.filter(l => isOverdue(l.followUp));
   const openRevenue = activeLeads.reduce((s, l) => s + (+l.value || 0), 0);
@@ -141,8 +136,7 @@ function renderDashboard() {
     .sort((a, b) => a.followUp.localeCompare(b.followUp))
     .slice(0, 5);
 
-  const pfBody = document.getElementById('priority-followups');
-  pfBody.innerHTML = priorityLeads.length === 0
+  document.getElementById('priority-followups').innerHTML = priorityLeads.length === 0
     ? `<tr><td colspan="4" class="empty-state"><p>No upcoming follow-ups</p></td></tr>`
     : priorityLeads.map(l => {
         const over = isOverdue(l.followUp);
@@ -154,9 +148,7 @@ function renderDashboard() {
         </tr>`;
       }).join('');
 
-  const acts = DB.activity;
-  const actList = document.getElementById('activity-list');
-  actList.innerHTML = acts.slice(0, 8).map(a =>
+  document.getElementById('activity-list').innerHTML = DB.activity.slice(0, 8).map(a =>
     `<div class="activity-item">
       <div class="activity-dot ${a.type === 'warn' ? 'warn' : a.type === 'danger' ? 'danger' : a.type === 'success' ? 'success' : ''}"></div>
       <div>
@@ -174,7 +166,6 @@ let leadFilter = 'All';
 
 function renderLeads() {
   let leads = DB.leads;
-
   if (leadFilter !== 'All') leads = leads.filter(l => l.status === leadFilter);
   if (leadSearch) {
     const q = leadSearch.toLowerCase();
@@ -185,9 +176,8 @@ function renderLeads() {
     );
   }
 
-  const tbody = document.getElementById('leads-tbody');
-  tbody.innerHTML = leads.length === 0
-    ? `<tr><td colspan="7"><div class="empty-state"><div class="icon">&#128205;</div><p>No leads found</p></div></td></tr>`
+  document.getElementById('leads-tbody').innerHTML = leads.length === 0
+    ? `<tr><td colspan="7"><div class="empty-state"><div class="icon">📭</div><p>No leads found</p></div></td></tr>`
     : leads.map(l => {
         const over = isOverdue(l.followUp) && l.status !== 'Won' && l.status !== 'Lost';
         return `<tr class="${over ? 'row-overdue' : ''}">
@@ -207,7 +197,6 @@ function renderLeads() {
 
 function openLeadModal(id) {
   const lead = id ? leadById(id) : null;
-  const m = document.getElementById('lead-modal');
   document.getElementById('lead-modal-title').textContent = lead ? 'Edit Lead' : 'New Lead';
   document.getElementById('lead-id').value = lead ? lead.id : '';
   document.getElementById('lead-name').value = lead ? lead.name : '';
@@ -218,7 +207,7 @@ function openLeadModal(id) {
   document.getElementById('lead-value').value = lead ? lead.value : '';
   document.getElementById('lead-followup').value = lead ? (lead.followUp || '') : '';
   document.getElementById('lead-notes').value = lead ? (lead.notes || '') : '';
-  m.classList.add('open');
+  document.getElementById('lead-modal').classList.add('open');
 }
 
 function closeLeadModal() { document.getElementById('lead-modal').classList.remove('open'); }
@@ -235,9 +224,7 @@ function saveLead() {
     followUp: document.getElementById('lead-followup').value || null,
     notes: document.getElementById('lead-notes').value.trim(),
   };
-
   if (!data.name) { alert('Name is required'); return; }
-
   const leads = DB.leads;
   if (id) {
     const i = leads.findIndex(l => l.id === id);
@@ -282,22 +269,29 @@ function renderTasks() {
     return (pMap[a.priority] || 0) - (pMap[b.priority] || 0);
   });
 
-  const tbody = document.getElementById('tasks-tbody');
-  tbody.innerHTML = tasks.length === 0
-    ? `<tr><td colspan="6"><div class="empty-state"><div class="icon">&#9989;</div><p>No tasks here</p></div></td></tr>`
+  document.getElementById('tasks-tbody').innerHTML = tasks.length === 0
+    ? `<tr><td colspan="6"><div class="empty-state"><div class="icon">✅</div><p>No tasks here</p></div></td></tr>`
     : tasks.map(t => {
         const over = t.status === 'Open' && isOverdue(t.dueDate);
         const lead = t.leadId ? leadById(t.leadId) : null;
+        const dueTd = over ? `<span class="badge badge-overdue">Overdue</span>` : formatDate(t.dueDate);
         return `<tr class="${over ? 'row-overdue' : ''} ${t.status === 'Done' ? 'row-done' : ''}">
-          <td>
-            <input type="checkbox" ${t.status === 'Done' ? 'checked' : ''} onchange="toggleTask('${t.id}', this.checked)" style="margin-right:8px;cursor:pointer">
-            <strong>${t.title}</strong>
+          <td class="task-title-cell">
+            <input type="checkbox" ${t.status === 'Done' ? 'checked' : ''} onchange="toggleTask('${t.id}', this.checked)">
+            <div class="task-title-wrap">
+              <strong>${t.title}</strong>
+              <div class="task-meta-mobile">
+                ${lead ? `<span>${lead.name}</span>` : ''}
+                ${t.dueDate ? `<span>${dueTd}</span>` : ''}
+                ${priorityBadge(t.priority)}
+              </div>
+            </div>
           </td>
           <td style="color:var(--text-muted)">${lead ? lead.name : '—'}</td>
-          <td>${over ? `<span class="badge badge-overdue">Overdue</span>` : formatDate(t.dueDate)}</td>
+          <td>${dueTd}</td>
           <td>${priorityBadge(t.priority)}</td>
           <td>${statusBadge(t.status)}</td>
-          <td style="white-space:nowrap">
+          <td class="task-actions-cell">
             <button class="btn btn-ghost btn-sm" onclick="openTaskModal('${t.id}')">Edit</button>
             <button class="btn btn-ghost btn-sm" style="color:var(--danger)" onclick="deleteTask('${t.id}')">Delete</button>
           </td>
@@ -319,20 +313,16 @@ function toggleTask(id, done) {
 
 function openTaskModal(id) {
   const task = id ? DB.tasks.find(t => t.id === id) : null;
-  const m = document.getElementById('task-modal');
   document.getElementById('task-modal-title').textContent = task ? 'Edit Task' : 'New Task';
   document.getElementById('task-id').value = task ? task.id : '';
   document.getElementById('task-title').value = task ? task.title : '';
   document.getElementById('task-due').value = task ? (task.dueDate || '') : '';
   document.getElementById('task-priority').value = task ? task.priority : 'Medium';
   document.getElementById('task-status').value = task ? task.status : 'Open';
-
   const sel = document.getElementById('task-lead');
-  const leads = DB.leads;
   sel.innerHTML = '<option value="">— No linked lead —</option>' +
-    leads.map(l => `<option value="${l.id}" ${task && task.leadId === l.id ? 'selected' : ''}>${l.name} (${l.company})</option>`).join('');
-
-  m.classList.add('open');
+    DB.leads.map(l => `<option value="${l.id}" ${task && task.leadId === l.id ? 'selected' : ''}>${l.name} (${l.company})</option>`).join('');
+  document.getElementById('task-modal').classList.add('open');
 }
 
 function closeTaskModal() { document.getElementById('task-modal').classList.remove('open'); }
@@ -346,9 +336,7 @@ function saveTask() {
     priority: document.getElementById('task-priority').value,
     status: document.getElementById('task-status').value,
   };
-
   if (!data.title) { alert('Task title is required'); return; }
-
   const tasks = DB.tasks;
   if (id) {
     const i = tasks.findIndex(t => t.id === id);
@@ -377,7 +365,7 @@ function deleteTask(id) {
   if (currentPage === 'dashboard') renderDashboard();
 }
 
-// ─── Settings ────────────────────────────────────────────────────────────────
+// ─── Settings ─────────────────────────────────────────────────────────────────
 
 function renderSettings() {
   const leads = DB.leads;
@@ -406,7 +394,7 @@ function exportData() {
   showToast('Data exported');
 }
 
-// ─── Mobile sidebar ──────────────────────────────────────────────────────────
+// ─── Mobile sidebar ───────────────────────────────────────────────────────────
 
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
@@ -420,7 +408,7 @@ function closeSidebar() {
   document.getElementById('sidebar-overlay').classList.remove('visible');
 }
 
-// ─── Bootstrap ───────────────────────────────────────────────────────────────
+// ─── Bootstrap ────────────────────────────────────────────────────────────────
 
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('nav a[data-page]').forEach(a => {
@@ -439,8 +427,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   document.querySelectorAll('.task-filter-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.task-filter-btn').forEach(b => b.classList.remove('btn-primary'));
-      document.querySelectorAll('.task-filter-btn').forEach(b => b.classList.add('btn-ghost'));
+      document.querySelectorAll('.task-filter-btn').forEach(b => {
+        b.classList.remove('btn-primary');
+        b.classList.add('btn-ghost');
+      });
       btn.classList.remove('btn-ghost');
       btn.classList.add('btn-primary');
       taskFilter = btn.dataset.filter;

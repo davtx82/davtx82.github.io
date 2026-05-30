@@ -31,7 +31,6 @@ body {
   overflow-x: hidden;
 }
 
-/* Layout */
 #app { display: flex; min-height: 100vh; }
 
 /* Sidebar */
@@ -119,11 +118,11 @@ nav a .icon { font-size: 16px; width: 20px; text-align: center; }
   line-height: 1;
   transition: background 0.15s;
   flex-shrink: 0;
+  touch-action: manipulation;
 }
 
 #menu-toggle:hover { background: var(--bg); }
 
-/* Sidebar dim overlay on mobile */
 #sidebar-overlay {
   display: none;
   position: fixed;
@@ -134,7 +133,7 @@ nav a .icon { font-size: 16px; width: 20px; text-align: center; }
 
 #sidebar-overlay.visible { display: block; }
 
-/* Main content */
+/* Main */
 #main {
   margin-left: var(--sidebar-w);
   flex: 1;
@@ -144,7 +143,7 @@ nav a .icon { font-size: 16px; width: 20px; text-align: center; }
   min-width: 0;
 }
 
-/* Hero banner */
+/* Hero */
 #hero {
   background: linear-gradient(135deg, #1e40af 0%, #2563eb 60%, #3b82f6 100%);
   color: white;
@@ -166,11 +165,9 @@ nav a .icon { font-size: 16px; width: 20px; text-align: center; }
   line-height: 1.55;
 }
 
-/* Page content */
 .page { display: none; padding: 28px 32px; }
 .page.active { display: block; }
 
-/* Top bar (for non-hero pages) */
 .page-header {
   display: flex;
   align-items: center;
@@ -224,7 +221,6 @@ nav a .icon { font-size: 16px; width: 20px; text-align: center; }
 .stat-card.success .value { color: var(--success); }
 .stat-card.warn .value { color: var(--warning); }
 
-/* Two-col layout */
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 
 /* Card */
@@ -253,6 +249,34 @@ nav a .icon { font-size: 16px; width: 20px; text-align: center; }
   -webkit-overflow-scrolling: touch;
 }
 
+/* Checkbox */
+input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+  touch-action: manipulation;
+}
+
+/* Task card internals */
+.task-title-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.task-meta-mobile {
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 5px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
 /* Table */
 table { width: 100%; border-collapse: collapse; }
 
@@ -278,7 +302,7 @@ td {
 tr:last-child td { border-bottom: none; }
 tbody tr:hover { background: #f8fafc; }
 
-/* Badges / Status */
+/* Badges */
 .badge {
   display: inline-block;
   padding: 2px 8px;
@@ -302,7 +326,6 @@ tbody tr:hover { background: #f8fafc; }
 .badge-low { background: #f0fdf4; color: #15803d; }
 .badge-overdue { background: #fee2e2; color: #b91c1c; }
 
-/* Priority */
 .priority-high { color: var(--danger); font-weight: 700; }
 .priority-medium { color: var(--warning); font-weight: 700; }
 .priority-low { color: var(--success); font-weight: 700; }
@@ -318,10 +341,11 @@ tbody tr:hover { background: #f8fafc; }
   font-weight: 600;
   cursor: pointer;
   border: none;
-  transition: background 0.15s, box-shadow 0.15s;
+  transition: background 0.15s;
   text-decoration: none;
   white-space: nowrap;
   line-height: 1.4;
+  touch-action: manipulation;
 }
 
 .btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
@@ -348,7 +372,6 @@ tbody tr:hover { background: #f8fafc; }
 }
 
 .form-row.full { grid-template-columns: 1fr; }
-
 .form-group { display: flex; flex-direction: column; gap: 4px; }
 
 label { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.4px; }
@@ -417,6 +440,7 @@ textarea { resize: vertical; min-height: 80px; }
   padding: 2px 6px;
   border-radius: 4px;
   transition: background 0.15s;
+  touch-action: manipulation;
 }
 .modal-close:hover { background: var(--bg); color: var(--text); }
 
@@ -429,7 +453,7 @@ textarea { resize: vertical; min-height: 80px; }
   gap: 10px;
 }
 
-/* Search/filter bar */
+/* Filter bar */
 .filter-bar {
   display: flex;
   gap: 10px;
@@ -440,7 +464,7 @@ textarea { resize: vertical; min-height: 80px; }
 .filter-bar input { max-width: 260px; flex: 1; min-width: 0; }
 .filter-bar select { width: auto; }
 
-/* Activity list */
+/* Activity */
 .activity-list { padding: 4px 0; }
 
 .activity-item {
@@ -469,7 +493,6 @@ textarea { resize: vertical; min-height: 80px; }
 .activity-text { font-size: 13px; line-height: 1.45; }
 .activity-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
-/* Overdue highlight */
 .row-overdue td { background: #fff8f8; }
 .row-done td { opacity: 0.55; }
 
@@ -501,7 +524,7 @@ textarea { resize: vertical; min-height: 80px; }
 
 .settings-section p { font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
 
-/* Responsive */
+/* ── Responsive ── */
 @media (max-width: 768px) {
   #mobile-bar { display: flex; }
 
@@ -524,14 +547,69 @@ textarea { resize: vertical; min-height: 80px; }
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .form-row { grid-template-columns: 1fr; }
 
-  table { font-size: 12.5px; }
-  td, th { padding: 8px 10px; }
+  table { font-size: 13px; }
+  td, th { padding: 10px 12px; }
 
   .filter-bar input { max-width: 100%; }
 
   .modal-body { padding: 16px; }
   .modal-footer { padding: 12px 16px; }
   .modal-header { padding: 14px 16px; }
+
+  /* Leads: hide Notes column */
+  #page-leads th:nth-child(6),
+  #page-leads td:nth-child(6) { display: none; }
+
+  /* Tasks: full card layout */
+  #page-tasks .card { overflow: visible; }
+  #page-tasks .card-body { overflow-x: visible; }
+  #page-tasks table { display: block; }
+  #page-tasks thead { display: none; }
+  #page-tasks tbody { display: block; }
+
+  #page-tasks tr {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  #page-tasks tr:last-child { border-bottom: none; }
+  #page-tasks tr.row-overdue { background: #fff8f8; }
+  #page-tasks tr.row-done { opacity: 0.55; }
+
+  /* Hide all cells by default; show only the two we want */
+  #page-tasks td { display: none; border: none; padding: 0; }
+
+  #page-tasks td.task-title-cell {
+    display: flex;
+    flex: 1;
+    gap: 14px;
+    align-items: flex-start;
+    min-width: 0;
+  }
+
+  #page-tasks td.task-actions-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  #page-tasks td.task-actions-cell .btn {
+    padding: 7px 12px;
+    font-size: 12.5px;
+  }
+
+  .task-meta-mobile { display: flex; }
+
+  /* Big, easy-to-tap checkbox */
+  input[type="checkbox"] {
+    width: 28px;
+    height: 28px;
+    margin-top: 1px;
+  }
 }
 
 @media (max-width: 480px) {
