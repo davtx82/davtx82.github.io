@@ -156,11 +156,13 @@ function formatDate(dateStr) {
 
 function leadById(id) { return getLeads().find(l => l.id === id); }
 
-function addActivity(text, type = 'primary') {
+function addActivity(text, type = 'primary', ref = null) {
   const now = new Date();
   const time = `${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}, ${now.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
   const acts = DB.activity;
-  acts.unshift({ text, time, type });
+  const item = { text, time, type };
+  if (ref) item.ref = ref;
+  acts.unshift(item);
   DB.activity = acts.slice(0, 20);
 }
 
@@ -198,6 +200,16 @@ function navigateTasks(filter) {
       b.classList.toggle('btn-ghost',   b.dataset.filter !== taskFilter);
     });
   });
+}
+
+function handleActivityClick(el) {
+  const kind = el.dataset.refKind;
+  const id   = el.dataset.refId;
+  if (kind === 'lead') {
+    navigate('leads').then(() => { if (id) openLeadModal(id); });
+  } else if (kind === 'task') {
+    navigate('tasks').then(() => { if (id) openTaskModal(id); });
+  }
 }
 
 // ─── Router ───────────────────────────────────────────────────────────────────
@@ -255,12 +267,15 @@ function renderDashboard() {
         </tr>`;
       }).join('');
 
-  document.getElementById('activity-list').innerHTML = DB.activity.slice(0, 8).map(a =>
-    `<div class="activity-item">
-      <div class="activity-dot ${a.type === 'warn' ? 'warn' : a.type === 'danger' ? 'danger' : a.type === 'success' ? 'success' : ''}"></div>
+  document.getElementById('activity-list').innerHTML = DB.activity.slice(0, 8).map(a => {
+    const dotCls = a.type === 'warn' ? 'warn' : a.type === 'danger' ? 'danger' : a.type === 'success' ? 'success' : '';
+    const ref = a.ref;
+    const refAttrs = ref ? `data-ref-kind="${ref.kind}" data-ref-id="${ref.id || ''}" onclick="handleActivityClick(this)"` : '';
+    return `<div class="activity-item${ref ? ' clickable' : ''}" ${refAttrs}>
+      <div class="activity-dot ${dotCls}"></div>
       <div><div class="activity-text">${a.text}</div><div class="activity-time">${a.time}</div></div>
-    </div>`
-  ).join('');
+    </div>`;
+  }).join('');
 }
 
 // ─── Leads ────────────────────────────────────────────────────────────────────
@@ -343,16 +358,16 @@ async function saveLead() {
       if (id) {
         const updated = await AT.updateLead(id, data);
         cache.leads = (cache.leads || []).map(l => l.id === id ? updated : l);
-        addActivity(`Updated lead: ${data.name}`, 'primary'); showToast('Lead updated');
+        addActivity(`Updated lead: ${data.name}`, 'primary', { kind: 'lead', id }); showToast('Lead updated');
       } else {
         const created = await AT.createLead(data);
         cache.leads = [...(cache.leads || []), created];
-        addActivity(`New lead added: ${data.name}`, 'primary'); showToast('Lead added');
+        addActivity(`New lead added: ${data.name}`, 'primary', { kind: 'lead', id: created.id }); showToast('Lead added');
       }
     } else {
       const leads = getLeads();
-      if (id) { const i = leads.findIndex(l => l.id === id); leads[i] = { ...leads[i], ...data }; addActivity(`Updated lead: ${data.name}`, 'primary'); showToast('Lead updated'); }
-      else { leads.push({ id: uid(), ...data }); addActivity(`New lead added: ${data.name} (${fmtCurrency(data.value)})`, 'primary'); showToast('Lead added'); }
+      if (id) { const i = leads.findIndex(l => l.id === id); leads[i] = { ...leads[i], ...data }; addActivity(`Updated lead: ${data.name}`, 'primary', { kind: 'lead', id }); showToast('Lead updated'); }
+      else { const newId = uid(); leads.push({ id: newId, ...data }); addActivity(`New lead added: ${data.name} (${fmtCurrency(data.value)})`, 'primary', { kind: 'lead', id: newId }); showToast('Lead added'); }
       localStorage.setItem('biz_leads', JSON.stringify(leads));
     }
     closeLeadModal(); renderLeads();
@@ -426,7 +441,7 @@ function toggleTask(id, done) {
   if (!t) return;
   t.status = done ? 'Done' : 'Open';
   DB.tasks = tasks;
-  addActivity(`Task "${t.title}" marked ${t.status}`, done ? 'success' : 'primary');
+  addActivity(`Task "${t.title}" marked ${t.status}`, done ? 'success' : 'primary', { kind: 'task', id });
   showToast(`Task marked ${t.status}`);
   renderTasks();
   if (currentPage === 'dashboard') renderDashboard();
@@ -459,8 +474,8 @@ function saveTask() {
   };
   if (!data.title) { alert('Task title is required'); return; }
   const tasks = DB.tasks;
-  if (id) { const i = tasks.findIndex(t => t.id === id); tasks[i] = { ...tasks[i], ...data }; addActivity(`Updated task: ${data.title}`, 'primary'); showToast('Task updated'); }
-  else { tasks.push({ id: uid(), ...data }); addActivity(`New task added: ${data.title}`, 'primary'); showToast('Task added'); }
+  if (id) { const i = tasks.findIndex(t => t.id === id); tasks[i] = { ...tasks[i], ...data }; addActivity(`Updated task: ${data.title}`, 'primary', { kind: 'task', id }); showToast('Task updated'); }
+  else { const newId = uid(); tasks.push({ id: newId, ...data }); addActivity(`New task added: ${data.title}`, 'primary', { kind: 'task', id: newId }); showToast('Task added'); }
   DB.tasks = tasks;
   closeTaskModal(); renderTasks();
   if (currentPage === 'dashboard') renderDashboard();
