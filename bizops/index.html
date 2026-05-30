@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BizOps Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<button id="menu-toggle" onclick="toggleSidebar()" aria-label="Open menu">☰</button>
+
+<div id="app">
+
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <div class="sidebar-logo">
+      <h1>BizOps</h1>
+      <p>Small Business Dashboard</p>
+    </div>
+    <nav>
+      <a data-page="dashboard" class="active">
+        <span class="icon">📊</span> Dashboard
+      </a>
+      <a data-page="leads">
+        <span class="icon">👤</span> Leads &amp; Customers
+      </a>
+      <a data-page="tasks">
+        <span class="icon">✅</span> Tasks &amp; Follow-ups
+      </a>
+      <a data-page="settings">
+        <span class="icon">⚙️</span> Settings
+      </a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main id="main">
+
+    <!-- Hero (shown only on dashboard) -->
+    <div id="hero">
+      <h2>Stop losing leads and forgetting follow-ups.</h2>
+      <p>A simple operations dashboard for small businesses that need better visibility without complicated software.</p>
+    </div>
+
+    <!-- Dashboard Page -->
+    <section class="page active" id="page-dashboard">
+      <div class="stats-grid" style="margin-top:28px">
+        <div class="stat-card">
+          <div class="label">Active Leads</div>
+          <div class="value" id="stat-leads">—</div>
+          <div class="sub">not won or lost</div>
+        </div>
+        <div class="stat-card alert">
+          <div class="label">Overdue Follow-ups</div>
+          <div class="value" id="stat-overdue">—</div>
+          <div class="sub">need attention now</div>
+        </div>
+        <div class="stat-card success">
+          <div class="label">Open Revenue</div>
+          <div class="value" id="stat-revenue">—</div>
+          <div class="sub">estimated pipeline</div>
+        </div>
+        <div class="stat-card warn">
+          <div class="label">Tasks Due Today</div>
+          <div class="value" id="stat-tasks">—</div>
+          <div class="sub">open tasks today</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            Top Priority Follow-ups
+            <button class="btn btn-ghost btn-sm" onclick="navigate('leads')">View all</button>
+          </div>
+          <div class="card-body">
+            <table>
+              <thead>
+                <tr>
+                  <th>Lead</th>
+                  <th>Status</th>
+                  <th>Follow-up</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody id="priority-followups"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">Recent Activity</div>
+          <div class="card-body">
+            <div class="activity-list" id="activity-list"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Leads Page -->
+    <section class="page" id="page-leads">
+      <div class="page-header">
+        <h2>Leads &amp; Customers</h2>
+        <button class="btn btn-primary" onclick="openLeadModal(null)">+ New Lead</button>
+      </div>
+
+      <div class="filter-bar">
+        <input type="text" id="lead-search" placeholder="Search by name, company, or email…">
+        <select id="lead-filter">
+          <option value="All">All Statuses</option>
+          <option>New</option>
+          <option>Contacted</option>
+          <option>Waiting</option>
+          <option>Won</option>
+          <option>Lost</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <table>
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Company</th>
+                <th>Status</th>
+                <th>Est. Value</th>
+                <th>Follow-up</th>
+                <th>Notes</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="leads-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tasks Page -->
+    <section class="page" id="page-tasks">
+      <div class="page-header">
+        <h2>Tasks &amp; Follow-ups</h2>
+        <button class="btn btn-primary" onclick="openTaskModal(null)">+ New Task</button>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap">
+        <button class="btn task-filter-btn btn-primary" data-filter="All">All</button>
+        <button class="btn task-filter-btn btn-ghost" data-filter="Open">Open</button>
+        <button class="btn task-filter-btn btn-ghost" data-filter="Overdue">Overdue</button>
+        <button class="btn task-filter-btn btn-ghost" data-filter="Done">Done</button>
+      </div>
+
+      <div class="card">
+        <div class="card-body">
+          <table>
+            <thead>
+              <tr>
+                <th>Task</th>
+                <th>Lead</th>
+                <th>Due Date</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tasks-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Settings Page -->
+    <section class="page" id="page-settings">
+      <div class="page-header">
+        <h2>Settings &amp; Demo Data</h2>
+      </div>
+
+      <div class="settings-section">
+        <h3>About This Dashboard</h3>
+        <p>BizOps is a lightweight operations dashboard built for small business owners who need visibility over their leads, follow-ups, and tasks — without complicated software.</p>
+        <p style="margin-bottom:0">All data is stored locally in your browser. Nothing is sent to any server.</p>
+      </div>
+
+      <div class="settings-section">
+        <h3>Current Data</h3>
+        <p id="settings-summary">Loading…</p>
+        <button class="btn btn-ghost" onclick="exportData()" style="margin-right:10px">Export JSON</button>
+        <button class="btn btn-danger" onclick="resetDemoData()">Reset to Demo Data</button>
+      </div>
+
+      <div class="settings-section">
+        <h3>Customization for Your Business</h3>
+        <p>This dashboard can be tailored to fit your workflow. Things that can be customized for a client include:</p>
+        <ul style="margin-left:18px;font-size:13px;color:var(--text-muted);line-height:2">
+          <li>Your business name, brand colors, and logo</li>
+          <li>Lead stages and status labels specific to your sales process</li>
+          <li>Custom fields per industry (e.g. job site address for contractors)</li>
+          <li>Revenue categories or service types</li>
+          <li>Weekly email digest via a simple integration</li>
+          <li>Multi-user access and cloud data sync</li>
+        </ul>
+      </div>
+
+      <div class="settings-section" style="background:#f0fdf4;border-color:#bbf7d0">
+        <h3 style="color:var(--success)">Offer: Custom Dashboard for Your Business</h3>
+        <p>I'll customize this dashboard for your business for <strong>$500–$1,500</strong> depending on complexity — including your branding, custom fields, and a setup call to walk your team through it.</p>
+        <p style="margin-bottom:0;font-size:12px;color:var(--text-muted)">Contact: davtx82@gmail.com</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- Lead Modal -->
+<div class="modal-overlay" id="lead-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="lead-modal-title">New Lead</h3>
+      <button class="modal-close" onclick="closeLeadModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="lead-id">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="lead-name">Name *</label>
+          <input type="text" id="lead-name" placeholder="Full name">
+        </div>
+        <div class="form-group">
+          <label for="lead-company">Company</label>
+          <input type="text" id="lead-company" placeholder="Business name">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="lead-phone">Phone</label>
+          <input type="tel" id="lead-phone" placeholder="555-000-0000">
+        </div>
+        <div class="form-group">
+          <label for="lead-email">Email</label>
+          <input type="email" id="lead-email" placeholder="email@example.com">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="lead-status">Status</label>
+          <select id="lead-status">
+            <option>New</option>
+            <option>Contacted</option>
+            <option>Waiting</option>
+            <option>Won</option>
+            <option>Lost</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="lead-value">Estimated Value ($)</label>
+          <input type="number" id="lead-value" placeholder="0" min="0">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="lead-followup">Next Follow-up Date</label>
+          <input type="date" id="lead-followup">
+        </div>
+      </div>
+      <div class="form-row full">
+        <div class="form-group">
+          <label for="lead-notes">Notes</label>
+          <textarea id="lead-notes" placeholder="Context, next steps, anything relevant…"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeLeadModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveLead()">Save Lead</button>
+    </div>
+  </div>
+</div>
+
+<!-- Task Modal -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="task-modal-title">New Task</h3>
+      <button class="modal-close" onclick="closeTaskModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="task-id">
+      <div class="form-row full">
+        <div class="form-group">
+          <label for="task-title">Task Title *</label>
+          <input type="text" id="task-title" placeholder="What needs to be done?">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="task-lead">Linked Lead</label>
+          <select id="task-lead"></select>
+        </div>
+        <div class="form-group">
+          <label for="task-due">Due Date</label>
+          <input type="date" id="task-due">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="task-priority">Priority</label>
+          <select id="task-priority">
+            <option>High</option>
+            <option selected>Medium</option>
+            <option>Low</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="task-status">Status</label>
+          <select id="task-status">
+            <option>Open</option>
+            <option>Done</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeTaskModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTask()">Save Task</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>
