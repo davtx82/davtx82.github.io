@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__99ae7fbd-eb4d-45df-a0e7-602cdfb0dc98__*",
+      "mcp__56c32fc0-77b2-42cc-add2-b9a359d8c7bf__*",
+      "mcp__2978e25e-aa8c-4fb7-9c80-ee5c5e827101__*",
+      "mcp__658b5722-b601-4598-8ab3-4f959bd89596__*",
+      "mcp__github__*"
+    ]
+  }
+}
