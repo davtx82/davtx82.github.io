@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nine Mile Basin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0F1210;
+  --panel:#161A17;
+  --ink:#E7E4DC;
+  --muted:rgba(231,228,220,.55);
+  --faint:rgba(231,228,220,.3);
+  --accent:#7F9A82;
+  --border:rgba(231,228,220,.1);
+  --serif:'Crimson Pro',Georgia,serif;
+  --sans:'Inter',-apple-system,sans-serif;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--sans);
+  color:var(--ink);
+  background:var(--bg);
+  min-height:100vh;
+  min-height:100dvh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:32px 20px;
+  line-height:1.6;
+}
+.wrap{max-width:640px;width:100%}
+.eyebrow{
+  font-size:.7rem;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:var(--accent);
+  text-align:center;
+  margin-bottom:10px;
+  opacity:.85;
+}
+h1{
+  font-family:var(--serif);
+  font-weight:400;
+  font-style:italic;
+  font-size:clamp(1.6rem,5vw,2.2rem);
+  color:var(--ink);
+  text-align:center;
+  margin-bottom:40px;
+}
+.card{
+  background:var(--panel);
+  border:1px solid var(--border);
+  padding:40px 36px;
+  min-height:220px;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+  gap:32px;
+}
+#storyText{
+  font-family:var(--serif);
+  font-size:1.15rem;
+  line-height:1.9;
+  color:var(--ink);
+  opacity:0;
+  animation:fadeIn 1s ease forwards;
+}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.choices{display:flex;flex-direction:column;gap:10px}
+.choice-btn{
+  background:transparent;
+  border:1px solid var(--border);
+  color:var(--muted);
+  font-family:var(--sans);
+  font-size:.88rem;
+  text-align:left;
+  padding:16px 18px;
+  cursor:pointer;
+  transition:all .3s;
+}
+.choice-btn:hover{
+  border-color:var(--accent);
+  color:var(--ink);
+  background:rgba(127,154,130,.06);
+}
+.ending-tag{
+  font-size:.65rem;
+  letter-spacing:.16em;
+  text-transform:uppercase;
+  color:var(--accent);
+  opacity:.7;
+  text-align:center;
+}
+.restart{
+  display:block;
+  margin:28px auto 0;
+  background:none;
+  border:1px solid var(--border);
+  color:var(--muted);
+  font-family:var(--sans);
+  font-size:.75rem;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  padding:12px 28px;
+  cursor:pointer;
+  transition:all .3s;
+}
+.restart:hover{border-color:var(--accent);color:var(--ink)}
+footer{
+  text-align:center;
+  margin-top:32px;
+  font-size:.68rem;
+  color:var(--faint);
+  letter-spacing:.04em;
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="eyebrow">A Short Walk</div>
+  <h1 id="gameTitle"></h1>
+  <div class="card">
+    <div id="storyText"></div>
+    <div id="choices" class="choices"></div>
+  </div>
+  <button class="restart" id="restartBtn" style="display:none">Walk again</button>
+  <footer>Nine Mile Basin</footer>
+</div>
+
+<script>
+const STORY = {
+  "title": "Nine Mile Basin",
+  "start": "start",
+  "nodes": {
+    "start": {
+      "text": "The trailhead register hasn't been signed in four days. You write your name anyway, out of habit more than hope anyone will read it, and the pen skips on the damp page. Nine Mile Basin is supposed to take you two days there and back — a simple trip, the kind you used to do without thinking twice. Lately you've been doing everything without thinking twice, which might be the actual reason you're here.",
+      "choices": [
+        {"text": "Take the high traverse — longer views, fewer trees", "next": "traverse"},
+        {"text": "Take the low trail through the timber — familiar, close, quiet", "next": "timber"}
+      ],
+      "ending": null
+    },
+    "traverse": {
+      "text": "The traverse opens the whole basin up below you, hazed blue-gray in the distance, and for a while your head empties out the way it's supposed to on a trip like this. Then you notice the far ridgeline has gone soft at the edges — not clouds exactly, something flatter, grayer, moving in without any hurry at all. You check the time. You check it again a minute later, which tells you something about your own head that you'd rather not know.",
+      "choices": [
+        {"text": "Keep to the open ridge and watch it come", "next": "ridge_fog"},
+        {"text": "Drop toward the timberline before it reaches you", "next": "timber"}
+      ],
+      "ending": null
+    },
+    "timber": {
+      "text": "The trees close overhead and the light goes green and underwater. It's the kind of quiet that isn't actually quiet — creak of trunks, drip of yesterday's rain, something small moving off through the duff that you never quite see. You used to find this soothing. Today it just feels like being watched by something that isn't there, which is a strange sentence to have thought and an even stranger one to be unable to un-think.",
+      "choices": [
+        {"text": "Follow the old spur trail you remember from a map, years ago", "next": "spur"},
+        {"text": "Stay on the marked trail, exactly, no shortcuts", "next": "junction"}
+      ],
+      "ending": null
+    },
+    "ridge_fog": {
+      "text": "The fog reaches you slower than fog has any right to, thickening around your boots first, then your knees, until you're standing waist-deep in a gray tide with your own head sticking out the top of it, which would be funny if there were anyone around to tell. Sound does something strange in fog like this — your own breathing sounds like someone else's, off to the side, a half-step behind you.",
+      "choices": [
+        {"text": "Sit down right where you are and let it pass over you", "next": "sit_fog"},
+        {"text": "Keep moving by compass bearing alone, trusting the numbers over your eyes", "next": "compass"}
+      ],
+      "ending": null
+    },
+    "sit_fog": {
+      "text": "You sit on a flat rock with your pack still on and just let the fog have the mountain for a while. It's disorienting how much you don't mind. Somewhere in the gray, without quite meaning to, you start running through a list of everyone who'd notice if you didn't come back — and the list is shorter than you'd like, and that thought sits with you longer than the fog does.",
+      "choices": [
+        {"text": "Let that thought go and focus on the shape of the rock under you", "next": "clearing"},
+        {"text": "Keep pulling that thread — what does the list say about you", "next": "spiral"}
+      ],
+      "ending": null
+    },
+    "compass": {
+      "text": "You walk on numbers instead of landmarks, which is either very sensible or a little insane depending on how the next hour goes. The fog swallows your bearing markers one by one — that boulder, that lone snag, that notch in the ridge — until the compass needle is the only fact left in the world. You've never trusted an object this much in your life.",
+      "choices": [
+        {"text": "Trust it completely and keep walking", "next": "clearing"},
+        {"text": "Stop and second-guess it, over and over, until you've lost time you can't get back", "next": "spiral"}
+      ],
+      "ending": null
+    },
+    "spur": {
+      "text": "The spur trail is exactly where memory said it would be, and exactly as overgrown as four unattended years would make it. You push through brush that leaves your jacket soaked to the skin and find, an hour in, that the trail has simply stopped being a trail — just forest now, ordinary and total in every direction. You stand still for a long moment, the way you do when a word is right on the tip of your tongue and won't come.",
+      "choices": [
+        {"text": "Backtrack the way you came, admitting the mistake early", "next": "end_lonelier"},
+        {"text": "Push on cross-country — the basin has to be east of here", "next": "dusk"}
+      ],
+      "ending": null
+    },
+    "junction": {
+      "text": "The signed junction is a small, plain relief — a square of weathered wood telling you exactly where you stand, which feels like more than it should. NINE MILE BASIN, 3 MI, an arrow pointing into deeper trees. The light is already doing that late-afternoon thing where it goes gold and slantwise and makes you feel, for no good reason, faintly sad.",
+      "choices": [
+        {"text": "Press on toward the basin — you can make it by dark", "next": "dusk"},
+        {"text": "Make camp here, early, and let today just be a short day", "next": "campsite"}
+      ],
+      "ending": null
+    },
+    "dusk": {
+      "text": "Dusk in the trees isn't a moment, it's a slow leak — the color draining out of things one shade at a time until you're navigating by memory of where the trail was rather than where it actually is. At the edge of your headlamp beam, twice, something pale shifts between the trunks and is gone before you can decide if it was ever there. Deer, probably. Almost certainly. You say it out loud, which doesn't help as much as you'd hoped.",
+      "choices": [
+        {"text": "Stop here and make camp before full dark takes the decision from you", "next": "campsite"},
+        {"text": "Keep walking toward where the basin should be", "next": "dark_walk"}
+      ],
+      "ending": null
+    },
+    "dark_walk": {
+      "text": "You walk longer than you should, telling yourself the basin is just past the next rise, and then the next one, until the truth settles in without any drama at all: you don't know exactly where you are. It isn't panic, quite. It's smaller and colder than that — a kind of unhooking, like a boat slipping its line so gently you don't notice until you look back and the dock is gone.",
+      "choices": [
+        {"text": "Stop, breathe, and make a deliberate camp right here", "next": "lostcamp"},
+        {"text": "Keep pushing, sure the basin is close", "next": "creekfound"}
+      ],
+      "ending": null
+    },
+    "creekfound": {
+      "text": "You find water before you find anything else — a creek, talking quietly to itself in the dark, which you decide to take as a kind of company. You sit by it a long time, longer than makes practical sense, headlamp off, listening to the particular way water sounds when there is absolutely nothing else to hear it over. You are, you realize, not actually afraid. You're something else. You don't have the word for it yet.",
+      "choices": [
+        {"text": "Camp right here by the water and let the night happen", "next": "lostcamp"},
+        {"text": "Follow the creek down, trusting it to lead somewhere", "next": "end_dawnwalk"}
+      ],
+      "ending": null
+    },
+    "campsite": {
+      "text": "You pitch the tent with the particular, meditative care of someone who needs their hands busy more than they need the tent up fast. Rain starts sometime after dark, unhurried, more sound than weather — a long patient drumming that you lie awake inside of for a while, listening to your own thoughts arrive uninvited, the way they always do out here when there's finally nothing left to distract you from them.",
+      "choices": [
+        {"text": "Let the thoughts come and just sit with them", "next": "nightthoughts"},
+        {"text": "Read by headlamp until you're tired enough not to think", "next": "quietnight"}
+      ],
+      "ending": null
+    },
+    "lostcamp": {
+      "text": "You make camp with no idea, strictly speaking, where you are — just a flat patch of ground and a tarp strung low against weather that hasn't decided what it's doing yet. It should feel worse than it does. Instead there's a strange, unearned calm to it, the particular peace of a decision that's already been made and can't be unmade until morning.",
+      "choices": [
+        {"text": "Lie awake and take stock of how you actually feel, out here, alone", "next": "nightthoughts"},
+        {"text": "Force yourself to sleep and let tomorrow be tomorrow's problem", "next": "quietnight"}
+      ],
+      "ending": null
+    },
+    "nightthoughts": {
+      "text": "You lie there and let it all surface — the trip you almost didn't take, the reasons you needed to take it anyway, the strange fact that being properly, totally alone for the first time in months feels less like fear and more like finally exhaling. Somewhere outside, wind moves through the canopy in long, slow waves, like the mountain breathing along with you. You're not lost, you realize. Not really. You're just finally somewhere quiet enough to hear yourself think.",
+      "choices": [
+        {"text": "Let that clarity settle and wait calmly for morning", "next": "clearing"},
+        {"text": "Let the thought curdle into something heavier — how far away everything else feels", "next": "spiral"}
+      ],
+      "ending": null
+    },
+    "quietnight": {
+      "text": "You read until the words blur, then lie in the dark listening to rain find its way through the canopy in fat, irregular drops. Sleep comes in pieces, shallow and strange, full of half-dreams about trails that fork and refork. When you surface for good, gray light is already leaking through the tent fabric, and the rain, at some point in the night, quietly stopped.",
+      "choices": [
+        {"text": "Step outside and see what the morning actually looks like", "next": "clearing"},
+        {"text": "Stay zipped in a while longer, not ready to face it yet", "next": "spiral"}
+      ],
+      "ending": null
+    },
+    "spiral": {
+      "text": "The thought you're pulling on doesn't lead anywhere good, and you know that even as you keep pulling — how alone you are, how little of a mark you'd leave, how easy it would be for the mountain to simply not give you back. It isn't rational. It doesn't have to be, out here, in the dark, with no one to argue you out of it but yourself. So you argue yourself out of it. Slowly. Badly. It mostly works.",
+      "choices": [
+        {"text": "Get moving — motion will fix what sitting still can't", "next": "clearing"},
+        {"text": "Stay put until the feeling passes on its own, however long that takes", "next": "end_stillhere"}
+      ],
+      "ending": null
+    },
+    "clearing": {
+      "text": "The trees open, without much ceremony, into a wide clearing you don't recognize from any map — just grass gone silver with old rain, and the shape of the basin finally visible beyond it, closer than you expected or maybe just closer than you deserved. You stand there a moment doing nothing at all, which turns out to be exactly the right amount of doing.",
+      "choices": [
+        {"text": "Walk down into the basin and finish the trip you set out on", "next": "end_basin"},
+        {"text": "Turn around here — you've already gotten what you came for", "next": "end_turnback"}
+      ],
+      "ending": null
+    },
+    "end_basin": {
+      "text": "You reach the basin in the flat, unremarkable light of a morning that doesn't know it's meaningful to anyone. The water is perfectly still. You sit at its edge for a long time without doing much of anything, and it occurs to you that you came out here to get away from your own head and instead just walked deeper into it — which, you decide, watching the light move slowly across the surface, might have been the actual point all along. You'll hike out tomorrow. There's no hurry.",
+      "choices": [],
+      "ending": "success"
+    },
+    "end_turnback": {
+      "text": "You turn back before the basin, which feels less like giving up than like knowing when you've already gotten what you needed. The walk out is quieter than the walk in, the trail familiar again in a way that's almost disappointing. At the trailhead your car is exactly where you left it, dusted with two days of pollen. You sit in the driver's seat a while before starting the engine, in no rush to be anywhere else yet.",
+      "choices": [],
+      "ending": "neutral"
+    },
+    "end_dawnwalk": {
+      "text": "The creek leads you out sometime after first light, spilling you onto a gravel road you don't recognize but that clearly, eventually, goes somewhere. You walk it in the flat early sun, not quite sure what happened to you out there, not quite sure it needs a name. A truck passes eventually and the driver doesn't even slow down, which feels correct, somehow — like whatever this was, it was only ever yours to carry.",
+      "choices": [],
+      "ending": "neutral"
+    },
+    "end_stillhere": {
+      "text": "You stay put and let the feeling run its course, however long that takes, which turns out to be most of the morning. It doesn't resolve so much as fade, the way weather does, without a clean ending or a lesson learned. Eventually you just get up, because the body knows how to keep going even when the mind hasn't finished arguing with itself. You never do make it to the basin. You're not sure, looking back, that you ever needed to.",
+      "choices": [],
+      "ending": "neutral"
+    },
+    "end_lonelier": {
+      "text": "Something in you decides, quietly and without much fanfare, that the trip is over before it really began — that whatever you came out here looking for isn't going to be found by pushing further into an overgrown trail and your own doubled-back doubt. You hike out the way you came, faster than you need to, and don't look back at the ridge even once. The car is a relief in a way you didn't want it to be. You tell yourself you'll try again sometime. You're not sure you believe it.",
+      "choices": [],
+      "ending": "failure"
+    }
+  }
+};
+
+let currentId = STORY.start;
+
+const titleEl = document.getElementById('gameTitle');
+const textEl = document.getElementById('storyText');
+const choicesEl = document.getElementById('choices');
+const restartBtn = document.getElementById('restartBtn');
+
+titleEl.textContent = STORY.title;
+
+function render(nodeId) {
+  currentId = nodeId;
+  const node = STORY.nodes[nodeId];
+
+  textEl.style.animation = 'none';
+  void textEl.offsetWidth;
+  textEl.style.animation = null;
+  textEl.textContent = node.text;
+
+  choicesEl.innerHTML = '';
+
+  if (node.ending) {
+    const tag = document.createElement('div');
+    tag.className = 'ending-tag';
+    tag.textContent = '— ' + node.ending + ' —';
+    choicesEl.appendChild(tag);
+    restartBtn.style.display = 'block';
+    return;
+  }
+
+  restartBtn.style.display = 'none';
+  node.choices.forEach(choice => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = choice.text;
+    btn.onclick = () => render(choice.next);
+    choicesEl.appendChild(btn);
+  });
+}
+
+restartBtn.onclick = () => render(STORY.start);
+
+render(STORY.start);
+</script>
+
+</body>
+</html>
