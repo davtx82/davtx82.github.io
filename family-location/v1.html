@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Family Location Discovery</title>
+<style>
+:root{--bg:#f7f5f0;--card:#fff;--text:#202321;--muted:#6a6e69;--line:#dddcd5;--accent:#315e50;--soft:#e9f0ed}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+main{max-width:760px;margin:auto;padding:22px 16px 50px}.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:800;color:var(--accent)}
+h1{font-size:30px;line-height:1.08;margin:7px 0 8px}h2{font-size:23px;line-height:1.2;margin:0 0 9px}p{line-height:1.5}.muted{color:var(--muted)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:19px;padding:21px;box-shadow:0 8px 28px rgba(20,25,22,.07)}
+.people,.choices{display:grid;grid-template-columns:1fr;gap:10px;margin-top:18px}.person,.choice{min-height:52px;border:1px solid var(--line);border-radius:14px;background:#fff;color:var(--text);padding:14px 15px;text-align:left;font:inherit;font-size:16px;cursor:pointer}
+.person strong{display:block;font-size:18px}.person span{display:block;color:var(--muted);font-size:14px;margin-top:3px}.choice.on{border-color:var(--accent);background:var(--soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.progress{height:7px;background:#e7e5df;border-radius:999px;overflow:hidden;margin:12px 0 19px}.progress div{height:100%;background:var(--accent);width:0;transition:width .2s ease}.tag{font-size:12px;font-weight:800;color:var(--accent)}
+.actions{display:flex;justify-content:space-between;gap:10px;margin-top:21px}.btn{border:0;border-radius:13px;min-height:48px;padding:12px 17px;font:inherit;font-weight:750;cursor:pointer}.primary{background:var(--accent);color:#fff}.secondary{background:#eceae4;color:var(--text)}.btn:disabled{opacity:.4;cursor:not-allowed}
+.hint{font-size:13px;color:var(--muted);margin:10px 0 0}.note{margin-top:16px;padding:13px 14px;border-radius:13px;background:#f0eee8;font-size:14px;line-height:1.45;color:#4f534f}
+textarea{width:100%;min-height:125px;margin-top:16px;border:1px solid var(--line);border-radius:14px;padding:13px;font:inherit;font-size:16px;resize:vertical}.hidden{display:none!important}
+.code{margin-top:12px;padding:12px;border:1px solid var(--line);border-radius:11px;background:#f7f7f4;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;overflow-wrap:anywhere;max-height:160px;overflow:auto}.done-actions{display:grid;gap:10px;margin-top:16px}
+@media(min-width:620px){.people{grid-template-columns:repeat(3,1fr)}.choices.two{grid-template-columns:1fr 1fr}.done-actions{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body><main>
+<div style="padding:16px 3px 10px"><div class="eyebrow">Family Location Discovery</div><h1>What kind of life do you want?</h1><p class="muted">Answer for yourself. There are no right answers, and nobody else’s preferences should influence yours.</p></div>
+<section id="start" class="card">
+<h2>Who’s answering?</h2><p class="muted">Choose your name. Adults and teens get different versions.</p>
+<div class="people">
+<button class="person" data-person="David"><strong>David</strong><span>Adult version</span></button>
+<button class="person" data-person="Ema"><strong>Ema</strong><span>Adult version</span></button>
+<button class="person" data-person="Trystan"><strong>Trystan</strong><span>Teen version</span></button>
+</div>
+<div class="note"><strong>Low friction by design:</strong> almost everything is taps. The two written prompts at the end are optional. Your progress saves on this device.</div>
+<div id="resume"></div>
+</section>
+<section id="quiz" class="card hidden">
+<div id="tag" class="tag"></div><div class="progress"><div id="bar"></div></div><h2 id="title"></h2><p id="help" class="muted"></p><div id="answers"></div><div id="hint" class="hint"></div>
+<div class="actions"><button id="back" class="btn secondary" type="button">Back</button><button id="next" class="btn primary" type="button">Next</button></div>
+</section>
+<section id="done" class="card hidden">
+<div class="tag">COMPLETE</div><h2 style="margin-top:10px">You’re done.</h2><p id="doneText" class="muted"></p>
+<div class="note">Tap <strong>Email my answers</strong>. A pre-addressed email will open; just press Send. That lets David collect everyone’s answers for the family comparison.</div>
+<div class="done-actions"><button id="email" class="btn primary" type="button">Email my answers</button><button id="show" class="btn secondary" type="button">Show backup code</button></div>
+<div id="codeWrap" class="hidden"><div id="code" class="code"></div></div>
+</section>
+</main>
+<script>
+(()=>{
+const TO='davidmjones2025@gmail.com', KEY='fld-v1-';
+const C=[
+ ['life','Life','multi',5,'Pick the 5 things that matter most to a great life.','Choose what you genuinely want more of.',[['fam','Family time'],['sec','Financial security'],['free','Personal freedom'],['adv','Adventure & new experiences'],['comm','Strong community'],['nat','Nature & outdoors'],['priv','Privacy & quiet'],['friends','Friends & social life'],['career','Career/business opportunity'],['culture','Arts, food & culture'],['travel','Easy travel'],['slow','A slower, simpler life'],['beauty','Beautiful surroundings'],['health','Health & wellbeing'],['learn','Learning & growth']]],
+ ['day','Life','single',1,'Which ordinary day sounds most appealing?','',[['village','Walk to coffee, shops or a park; familiar faces; slower pace.'],['edge','Quiet home near nature, with a lively town or city still close.'],['suburb','Comfortable home, space, convenience and easy driving.'],['city','Dense, energetic city life with lots happening nearby.'],['rural','Maximum privacy, land and nature; drive for most things.'],['none','I genuinely don’t care.']]],
+ ['pace','Life','single',1,'What pace of life feels best?','',[['1','Very slow & calm'],['2','Mostly relaxed'],['3','Balanced'],['4','Busy & active'],['5','Fast & energetic']]],
+ ['social','People','single',1,'How much everyday social energy do you want around you?','Neighbors, public spaces, cafés, events and spontaneous interaction.',[['1','Very little'],['2','Some'],['3','Moderate'],['4','A lot'],['5','Very social']]]
+];
+const A=[...C,
+ ['home','Home','single',1,'Which home setup sounds best?','',[['walk','Smaller home in a walkable neighborhood'],['edge','Private, quiet home at the edge of town'],['sub','Larger suburban home with yard'],['land','Home with meaningful land/privacy'],['urban','Apartment/townhome in a lively urban area'],['none','No strong preference']]],
+ ['walkprivacy','Home','single',1,'Forced choice: privacy or walkability?','',[['walk','I’d sacrifice space/privacy for walkability'],['lw','Lean walkable, but need some quiet'],['mid','A genuine balance'],['lp','Lean privacy/space, but not isolation'],['priv','I’d sacrifice walkability for privacy/space']]],
+ ['climate','Environment','single',1,'Which climate would you choose if everything else were equal?','',[['warm','Warm most of the year; mild winter'],['med','Mediterranean: dry warm summers, mild wetter winters'],['four','Distinct four seasons'],['cool','Cooler and greener'],['trop','Tropical/subtropical'],['none','Climate is not a major factor']]],
+ ['weatherbad','Environment','multi',4,'Which weather conditions would wear you down most?','Pick up to 4.',[['heat','Long extreme heat'],['humid','High humidity'],['gray','Long gray/cloudy periods'],['cold','Long cold winters'],['snow','Frequent snow/ice'],['rain','Frequent rain'],['dry','Dry/brown landscape'],['storm','Frequent severe storms'],['none','None are major issues']]],
+ ['nature','Environment','multi',3,'Pick the 3 natural settings you most want nearby.','',[['coast','Ocean/coast'],['forest','Forests'],['mount','Mountains'],['water','Lakes/rivers'],['hills','Rolling hills/countryside'],['desert','Desert'],['parks','Excellent parks/greenways'],['none','Nature type doesn’t matter much']]],
+ ['warmculture','Culture','single',1,'How important is living in a socially warm, friendly culture?','',[['1','Not important'],['2','A little'],['3','Moderately'],['4','Very'],['5','Essential']]],
+ ['novelty','Culture','single',1,'How much cultural difference sounds good?','',[['fam','Mostly familiar'],['some','Some difference, but easy daily life'],['bal','A real balance'],['diff','Noticeably different; I’d enjoy adapting'],['deep','Deep immersion sounds exciting']]],
+ ['language','Culture','single',1,'How much language friction are you willing to accept?','',[['eng','Strongly prefer functioning in English'],['basic','Fine learning enough for daily life'],['learn','I’d seriously learn another language'],['deep','Major immersion/learning curve is okay']]],
+ ['community','Culture','single',1,'Which social style feels better?','',[['ind','Strong independence and privacy'],['li','Mostly independent, some community'],['bal','Balance of independence and community'],['lc','Community/family-centered with personal freedom'],['col','Strong family/community-centered culture']]],
+ ['safety','Family & Safety','single',1,'How heavily should everyday physical safety influence the decision?','',[['1','Low weight'],['2','Some weight'],['3','Important'],['4','Very important'],['5','One of the top priorities']]],
+ ['schoolrisk','Family & Safety','single',1,'How heavily should school/community violence risk influence the decision?','',[['1','Low weight'],['2','Some weight'],['3','Important'],['4','Very important'],['5','Potential deal-breaker']]],
+ ['kids','Family & Children','multi',5,'Pick 5 qualities you most hope our children develop.','',[['kind','Kindness'],['ind','Independence'],['cur','Curiosity'],['res','Resilience'],['cre','Creativity'],['conf','Confidence'],['world','Worldliness'],['ground','Groundedness'],['amb','Ambition'],['comm','Community-mindedness'],['healthy','Healthy habits'],['open','Open-mindedness'],['resp','Responsibility'],['adv','Adventurousness']]],
+ ['school','Family & Children','single',1,'Which school culture sounds best?','',[['bal','Balanced academics, wellbeing and activities'],['acad','Academically ambitious/rigorous'],['creative','Creative, flexible and student-centered'],['practical','Practical skills and real-world learning'],['low','Lower pressure and more childhood freedom'],['none','No strong preference']]],
+ ['kidind','Family & Children','single',1,'How important is a place where kids/teens can safely gain independence?','Walking, biking, transit, seeing friends without always needing a parent to drive.',[['1','Not important'],['2','A little'],['3','Important'],['4','Very'],['5','Extremely important']]],
+ ['healthcare','Society','single',1,'How important are affordable, dependable healthcare and human services?','',[['1','Low weight'],['2','Some'],['3','Important'],['4','Very important'],['5','Essential']]],
+ ['gov','Society','multi',4,'Which societal qualities matter most?','Pick up to 4.',[['stable','Political stability'],['liberty','Civil liberties/personal freedom'],['privacy','Privacy/limited surveillance'],['trust','High social trust'],['competent','Competent institutions'],['corrupt','Low corruption'],['tolerant','Social tolerance'],['biz','Business freedom/entrepreneurship'],['none','Not a major factor']]],
+ ['tax','Society','single',1,'Which public-services tradeoff feels better?','',[['low','Lower taxes; more personal responsibility'],['ll','Lean lower-tax/lighter-government'],['bal','Balance taxes and public services'],['ls','Lean stronger public services'],['high','Robust services/safety net, even with higher taxes']]],
+ ['work','Work & Money','single',1,'What role should work have in the life we’re building?','',[['min','As little as practical; life comes first'],['bal','Strong work-life balance'],['meaning','Meaningful work, but not consuming'],['amb','Career/business growth is a major priority']]],
+ ['localjob','Work & Money','single',1,'How important are strong local earning opportunities if remote work disappears?','',[['1','Not important'],['2','A little'],['3','Important'],['4','Very'],['5','Essential']]],
+ ['cost','Work & Money','single',1,'Which financial tradeoff feels best?','',[['cheap','Lower cost even with fewer amenities/opportunities'],['value','Strong value: reasonable costs + high quality of life'],['premium','Pay noticeably more for the right lifestyle'],['qol','Quality of life first; optimize finances around it']]],
+ ['distance','Connections','single',1,'How far from U.S. family feels sustainable long-term?','',[['drive','Prefer driving distance'],['flight','Short nonstop flight is fine'],['day','Anywhere reachable in one travel day'],['ocean','International/across an ocean is acceptable'],['any','Distance is secondary if the place is right']]],
+ ['roots','Connections','single',1,'Roots vs. reinvention: where are you?','',[['1','Strongly prefer roots/familiarity'],['2','Lean familiar'],['3','Balanced'],['4','Lean reinvention'],['5','Ready for a major new chapter']]],
+ ['t1','Hard Choices','single',1,'Choose one.','',[['A','Beautiful, safe, walkable town—but smaller home and higher housing cost.'],['B','Large affordable home and privacy—but car-dependent and less lively.']]],
+ ['t2','Hard Choices','single',1,'Choose one.','',[['A','Mild climate, coast and outdoor life—but farther from U.S. family.'],['B','Closer to family and easier logistics—but less ideal climate/scenery.']]],
+ ['t3','Hard Choices','single',1,'Choose one.','',[['A','Very safe, orderly society with more rules and conformity.'],['B','More individual freedom and looseness, with somewhat more disorder/risk.']]],
+ ['t4','Hard Choices','single',1,'Choose one.','',[['A','Low-stress culture and strong work-life balance, with lower earning ceiling.'],['B','Higher earning upside, with more hustle and competition.']]],
+ ['t5','Hard Choices','single',1,'Choose one.','',[['A','Strong community where people are involved in one another’s lives.'],['B','More privacy and independence, but weaker built-in community.']]],
+ ['must','Priorities','multi',6,'Pick up to 6 things closest to MUST-HAVES.','Only choose things that should carry major weight.',[['safe','High everyday safety'],['kids','Good environment for kids'],['health','Dependable healthcare'],['cost','Financially sustainable'],['nature','Great nature access'],['quiet','Quiet/privacy'],['walk','Walkability/independence'],['climate','Pleasant climate'],['comm','Warm community'],['free','Personal freedom'],['stable','Stable institutions'],['airport','Good travel access'],['income','Strong earning options'],['space','Enough home/land'],['culture','Cultural fit']]],
+ ['deal','Priorities','multi',6,'What could seriously rule a place out?','Only choose true deal-breakers.',[['crime','High violent-crime/violence risk'],['school','Meaningful school-safety concern'],['heat','Extreme heat'],['cold','Long harsh winter'],['gray','Very gray climate'],['cost','Unsustainable housing/costs'],['health','Poor healthcare access'],['isolated','Too isolated/little to do'],['dense','Too dense/little privacy'],['car','Extreme car dependence'],['lang','Severe language barrier'],['bureau','Heavy bureaucracy'],['unstable','Political/economic instability'],['far','Too far from family'],['none','No absolute deal-breakers yet']]],
+ ['dream','Reflection','text',1,'Optional: five years after moving, you’re genuinely glad we did. What is better about everyday life?','A sentence or two is plenty.'],
+ ['mistake','Reflection','text',1,'Optional: what would make you say, “Moving here was a mistake”?','Think about the everyday failure mode, not just a dramatic disaster.']
+];
+const T=[...C,
+ ['keep','Your Life','multi',5,'Pick the 5 things you’d care most about keeping or gaining after a move.','',[['friends','Good friends/social life'],['sports','Sports/activities'],['ind','More independence'],['things','Things to do nearby'],['nature','Nature/outdoors'],['travel','Travel/new places'],['school','A school I actually like'],['privacy','Privacy/personal space'],['family','Family time'],['tech','Gaming/internet/tech'],['weather','Better weather'],['safe','Feeling safe'],['future','Future college/career options'],['culture','Cool food/culture/places']]],
+ ['movefeel','Your Life','single',1,'When you imagine moving somewhere very different, how do you feel?','',[['exc','Mostly excited'],['cur','Curious, with some nerves'],['mix','Very mixed'],['worried','Mostly worried'],['no','I really don’t want a big move yet']]],
+ ['worry','Your Life','single',1,'What would worry you most about moving?','',[['friends','Losing/drifting from friends'],['school','Starting at a new school'],['fit','Not fitting into the culture'],['lang','Language barrier'],['bored','Being bored/nothing to do'],['family','Being far from family'],['future','Hurting future school/college plans'],['none','Nothing stands out']]],
+ ['place','Place','single',1,'Where sounds best to actually live?','',[['city','Lively city with lots to do'],['walk','Walkable smaller city/town'],['edge','Quiet neighborhood near a city/town'],['sub','Comfortable suburb'],['rural','More rural/lots of space'],['none','I don’t care much']]],
+ ['independence','Place','single',1,'How much would you value getting around without a parent driving you?','',[['1','Don’t care'],['2','A little'],['3','Would be nice'],['4','A lot'],['5','That would be awesome']]],
+ ['weather','Place','single',1,'Pick your ideal weather.','',[['warm','Warm most of the year'],['med','Warm summers, mild winters'],['four','Four real seasons'],['cool','Cooler/greener'],['none','I don’t care']]],
+ ['tnature','Place','multi',3,'Which would be coolest to have nearby?','Pick up to 3.',[['beach','Beaches/ocean'],['mount','Mountains'],['forest','Forests'],['water','Lakes/rivers'],['parks','Great parks/trails'],['city','I care more about city stuff']]],
+ ['tschool','School & Friends','single',1,'Which school sounds most appealing?','',[['bal','Balanced academics, sports, clubs and normal life'],['acad','Strong academics/college-focused'],['creative','Flexible, creative, less traditional'],['small','Smaller school where people know each other'],['big','Big school with lots of activities/options'],['none','No preference']]],
+ ['friendaccess','School & Friends','single',1,'How important is being able to see friends easily outside school?','',[['1','Not important'],['2','A little'],['3','Important'],['4','Very'],['5','Extremely']]],
+ ['tlanguage','Culture','single',1,'How would you feel about living where another language is common?','',[['no','I’d really rather not'],['some','Okay if I can mostly use English'],['learn','I’d be willing to learn'],['cool','That could be really cool']]],
+ ['tculture','Culture','single',1,'Which sounds better?','',[['fam','A place that feels pretty familiar'],['some','Mostly familiar with some new culture'],['diff','A noticeably different culture'],['any','I’m open to anything']]],
+ ['tdistance','Connections','single',1,'How far away feels okay?','',[['drive','Close enough to drive back'],['flight','A short flight'],['day','A full travel day is okay'],['world','Another country/continent could be okay'],['unsure','Not sure']]],
+ ['tt1','Hard Choices','single',1,'Choose one.','',[['A','Cool walkable place where I can go places on my own, but a smaller house.'],['B','Bigger house and more privacy, but I need a ride almost everywhere.']]],
+ ['tt2','Hard Choices','single',1,'Choose one.','',[['A','Move somewhere exciting and different, even if starting over socially is hard.'],['B','Stay somewhere more familiar so keeping friends and routines is easier.']]],
+ ['tt3','Hard Choices','single',1,'Choose one.','',[['A','Safer/quieter place with fewer things happening.'],['B','More exciting/busy place with somewhat more mess and risk.']]],
+ ['tt4','Hard Choices','single',1,'Choose one.','',[['A','Amazing weather/nature but farther from friends and extended family.'],['B','Less interesting weather/nature but easier to stay connected.']]],
+ ['tmust','Priorities','multi',5,'Pick up to 5 things a new place REALLY needs for you.','',[['friends','Good chance to make friends'],['school','Good school fit'],['sports','Sports/activities'],['things','Things to do'],['safe','Feel safe'],['ind','Independence/getting around'],['weather','Weather I like'],['nature','Nature/outdoors'],['space','Enough personal space'],['tech','Good internet/tech'],['future','Good future options'],['travel','Cool travel access']]],
+ ['tdeal','Priorities','multi',5,'What could make you really hate living somewhere?','',[['bored','Nothing to do'],['isolated','Feeling isolated'],['friends','Hard to make/see friends'],['school','Bad school experience'],['unsafe','Feeling unsafe'],['lang','Strong language barrier'],['weather','Weather I hate'],['crowd','Too crowded/no space'],['far','Too far from people I care about'],['none','No clear deal-breaker']]],
+ ['tdream','Reflection','text',1,'Optional: a year after moving, you’re actually glad we did. What happened that made it work?','Short answer is totally fine.'],
+ ['tlose','Reflection','text',1,'Optional: what are you most afraid of losing from your life now?','People, routines, places, activities—anything.']
+];
+const $=s=>document.getElementById(s);let person='',qs=[],i=0,ans={};
+function save(){localStorage.setItem(KEY+person,JSON.stringify({i,ans}))}
+function start(p,resume=false){person=p;qs=p==='Trystan'?T:A;i=0;ans={};if(resume){try{const d=JSON.parse(localStorage.getItem(KEY+p)||'null');if(d){i=Math.min(d.i||0,qs.length-1);ans=d.ans||{}}}catch(e){}}$('start').classList.add('hidden');$('done').classList.add('hidden');$('quiz').classList.remove('hidden');render()}
+function render(){const q=qs[i],v=ans[q[0]];$('tag').textContent=q[1]+' • '+(i+1)+' of '+qs.length;$('bar').style.width=Math.round(i/qs.length*100)+'%';$('title').textContent=q[4];$('help').textContent=q[5]||'';$('help').style.display=q[5]?'block':'none';$('answers').innerHTML='';$('hint').textContent='';$('back').disabled=i===0;$('next').textContent=i===qs.length-1?'Finish':'Next';$('next').disabled=false;
+ if(q[2]==='text'){const ta=document.createElement('textarea');ta.placeholder='Optional — tap Next to skip';ta.value=v||'';ta.maxLength=400;ta.addEventListener('input',()=>{ans[q[0]]=ta.value.trim();save()});$('answers').appendChild(ta);return}
+ const grid=document.createElement('div');grid.className='choices'+(q[2]==='single'?' two':'');const vals=Array.isArray(v)?v:[];
+ q[6].forEach(o=>{const b=document.createElement('button');b.type='button';b.className='choice'+((q[2]==='multi'?vals.includes(o[0]):v===o[0])?' on':'');b.textContent=o[1];b.addEventListener('click',()=>{if(q[2]==='single'){ans[q[0]]=o[0]}else{let a=Array.isArray(ans[q[0]])?[...ans[q[0]]]:[];if(a.includes(o[0]))a=a.filter(x=>x!==o[0]);else if(a.length<q[3])a.push(o[0]);ans[q[0]]=a}save();render()});grid.appendChild(b)});$('answers').appendChild(grid);
+ if(q[2]==='multi'){$('hint').textContent=vals.length+' selected • up to '+q[3];$('next').disabled=!vals.length}else $('next').disabled=!v;
+}
+function result(){const pairs=Object.entries(ans).map(([k,v])=>k+'='+(Array.isArray(v)?v.join(','):String(v).replace(/[|\n\r]/g,' ').slice(0,400)));return 'FLD1|person='+person+'|role='+(person==='Trystan'?'teen':'adult')+'|'+pairs.join('|')}
+function finish(){save();$('quiz').classList.add('hidden');$('done').classList.remove('hidden');$('doneText').textContent=person+', your answers are saved. Don’t compare notes yet—let everyone finish independently first.';$('code').textContent=result()}
+$('next').addEventListener('click',()=>{const q=qs[i],v=ans[q[0]];if(q[2]!=='text'&&(v==null||v===''||(Array.isArray(v)&&!v.length)))return;if(i<qs.length-1){i++;save();render()}else finish()});$('back').addEventListener('click',()=>{if(i>0){i--;save();render()}});
+document.querySelectorAll('.person').forEach(b=>b.addEventListener('click',()=>start(b.dataset.person,false)));
+$('email').addEventListener('click',()=>{const subject='Family Location Assessment — '+person+' — COMPLETE';const body='Family Location Discovery submission for '+person+'.\n\nANSWER_CODE:\n'+result()+'\n\nPlease keep this email for analysis.';location.href='mailto:'+encodeURIComponent(TO)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body)});
+$('show').addEventListener('click',()=>{$('codeWrap').classList.toggle('hidden')});
+function resumes(){const list=[];['David','Ema','Trystan'].forEach(p=>{try{const d=JSON.parse(localStorage.getItem(KEY+p)||'null');if(d&&d.ans&&Object.keys(d.ans).length)list.push(p)}catch(e){}});if(!list.length)return;const box=document.createElement('div');box.className='note';box.innerHTML='<strong>Saved progress:</strong>';const row=document.createElement('div');row.style.marginTop='10px';row.style.display='flex';row.style.gap='8px';row.style.flexWrap='wrap';list.forEach(p=>{const b=document.createElement('button');b.type='button';b.className='btn secondary';b.textContent='Resume '+p;b.addEventListener('click',()=>start(p,true));row.appendChild(b)});box.appendChild(row);$('resume').appendChild(box)}
+resumes();
+})();
+</script></body></html>
