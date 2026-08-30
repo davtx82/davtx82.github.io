@@ -16,6 +16,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Build one-file questionnaire
         shell: python
         run: |
@@ -30,6 +33,7 @@ jobs:
               with urllib.request.urlopen(base + name, timeout=30) as r:
                   js = r.read().decode('utf-8')
               html = html.replace(f'<script src="{name}"></script>', '<script>\n' + js + '\n</script>')
+
           html = html.replace('Family Location Discovery</div><h1>', 'Family Location Discovery · Build 16</div><h1>', 1)
           html = html.replace('data-person="David"', 'data-person="David" onclick="window.selectPerson&&window.selectPerson(\'David\')"', 1)
           html = html.replace('data-person="Ema"', 'data-person="Ema" onclick="window.selectPerson&&window.selectPerson(\'Ema\')"', 1)
@@ -37,15 +41,25 @@ jobs:
           html = html.replace('function load(p){', 'window.selectPerson=function(p){', 1)
           html = html.replace('updateBadges();showDashboard()}\nfunction minNeeded', 'updateBadges();showDashboard()};\nfunction minNeeded', 1)
           html = html.replace("b.addEventListener('click',()=>load(b.dataset.person))", "b.addEventListener('click',()=>window.selectPerson(b.dataset.person))")
+
           out = Path('family-location/v16/index.html')
           out.parent.mkdir(parents=True, exist_ok=True)
           out.write_text(html, encoding='utf-8')
           print('built', out, len(html), 'bytes')
-      - name: Commit built page
+
+      - name: Publish to gh-pages
         run: |
+          git fetch origin gh-pages
+          git worktree add /tmp/gh-pages origin/gh-pages
+          mkdir -p /tmp/gh-pages/family-location/v16
+          cp family-location/v16/index.html /tmp/gh-pages/family-location/v16/index.html
+          cd /tmp/gh-pages
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add family-location/v16/index.html
-          git diff --cached --quiet && exit 0
-          git commit -m "Build family location questionnaire v16"
-          git push
+          if git diff --cached --quiet; then
+            echo "No changes to publish"
+            exit 0
+          fi
+          git commit -m "Publish family location questionnaire v16"
+          git push origin HEAD:gh-pages
