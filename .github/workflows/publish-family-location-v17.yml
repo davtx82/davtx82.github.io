@@ -1,0 +1,43 @@
+name: Publish Family Location v17
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'family-location/v17-build/**'
+      - '.github/workflows/publish-family-location-v17.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Reconstruct exact tested HTML
+        run: |
+          cat family-location/v17-build/chunk*.txt | base64 --decode | gzip --decompress > /tmp/index.html
+          grep -q 'Clean Build 17' /tmp/index.html
+          grep -q 'href="#david"' /tmp/index.html
+          grep -q 'href="#ema"' /tmp/index.html
+          grep -q 'href="#trystan"' /tmp/index.html
+          echo "Built $(wc -c < /tmp/index.html) bytes"
+      - name: Publish to gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages
+          git checkout gh-pages
+          mkdir -p family-location/v17
+          cp /tmp/index.html family-location/v17/index.html
+          git add family-location/v17/index.html
+          if git diff --cached --quiet; then
+            echo "No changes"
+          else
+            git commit -m "Publish clean family location questionnaire v17"
+            git push origin gh-pages
+          fi
