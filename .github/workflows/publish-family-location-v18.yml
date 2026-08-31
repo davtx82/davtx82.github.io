@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'family-location/v18/generate.py'
+      - 'family-location/v18/apply-required-validation.py'
       - 'family-location/v18/data-part*.b64'
       - '.github/workflows/publish-family-location-v18.yml'
   workflow_dispatch:
@@ -35,6 +36,9 @@ jobs:
           (root/'data.json').write_bytes(raw)
           print('restored questionnaire data:',len(raw),'bytes')
           PY
+      - name: Apply required-answer validation
+        run: |
+          python family-location/v18/apply-required-validation.py
       - name: Generate static multi-page form
         run: |
           rm -rf family-location/v18/site
@@ -45,6 +49,22 @@ jobs:
           grep -q 'href="trystan.html"' family-location/v18/site/index.html
           grep -q 'Your sections' family-location/v18/site/david.html
           grep -q 'david-daily.html' family-location/v18/site/david.html
+          grep -q 'REQUIRED_VALIDATION_PATCH' family-location/v18/site/david-daily.html
+          grep -q 'All questions in this section are required.' family-location/v18/site/david-daily.html
+          ! grep -R 'placeholder="Optional"' family-location/v18/site
+          python - <<'PY'
+          from pathlib import Path
+          import re, html, json
+          root=Path('family-location/v18/site')
+          def required_count(name):
+              text=(root/name).read_text()
+              payloads=re.findall(r'data-required="([^"]+)"',text)
+              return sum(len(json.loads(html.unescape(x))) for x in payloads)
+          assert required_count('david.html')==88, required_count('david.html')
+          assert required_count('ema.html')==88, required_count('ema.html')
+          assert required_count('trystan.html')==35, required_count('trystan.html')
+          print('verified every question counts as required')
+          PY
       - name: Verify every HTML link target exists
         run: |
           python - <<'PY'
@@ -71,5 +91,5 @@ jobs:
           cp -R /tmp/family-location-v18/. family-location/v18/
           touch family-location/v18/.nojekyll
           git add family-location/v18
-          git commit -m "Publish clean family location questionnaire v18" || true
+          git commit -m "Publish required-answer family location questionnaire v18" || true
           git push origin gh-pages
