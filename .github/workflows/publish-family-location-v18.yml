@@ -1,0 +1,64 @@
+name: Publish Family Location v18
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'family-location/v18/generate.py'
+      - '.github/workflows/publish-family-location-v18.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch questionnaire source data
+        run: |
+          mkdir -p family-location/v18/source
+          for f in adult0.js adult1.js adult2.js adult3.js teen.js; do
+            curl --fail --location --retry 3 "https://family-location-discovery.vercel.app/$f?source=v18" -o "family-location/v18/source/$f"
+          done
+      - name: Generate static multi-page form
+        run: |
+          rm -rf family-location/v18/site
+          python family-location/v18/generate.py
+          test "$(find family-location/v18/site -maxdepth 1 -name '*.html' | wc -l)" -eq 35
+          grep -q 'href="david.html"' family-location/v18/site/index.html
+          grep -q 'href="ema.html"' family-location/v18/site/index.html
+          grep -q 'href="trystan.html"' family-location/v18/site/index.html
+          grep -q 'Your sections' family-location/v18/site/david.html
+          grep -q 'david-daily.html' family-location/v18/site/david.html
+      - name: Verify every HTML link target exists
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('family-location/v18/site')
+          files={p.name for p in root.glob('*.html')}
+          bad=[]
+          for p in root.glob('*.html'):
+              for h in re.findall(r'href="([^"]+\.html)"',p.read_text()):
+                  if h not in files: bad.append((p.name,h))
+          if bad: raise SystemExit(str(bad))
+          print('verified',len(files),'pages with no broken internal links')
+          PY
+      - name: Publish to gh-pages
+        run: |
+          cp -R family-location/v18/site /tmp/family-location-v18
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages
+          git checkout gh-pages
+          rm -rf family-location/v18
+          mkdir -p family-location/v18
+          cp -R /tmp/family-location-v18/. family-location/v18/
+          touch family-location/v18/.nojekyll
+          git add family-location/v18
+          git commit -m "Publish clean family location questionnaire v18" || true
+          git push origin gh-pages
