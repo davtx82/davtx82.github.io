@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'family-location/v18/generate.py'
+      - 'family-location/v18/data-part*.b64'
       - '.github/workflows/publish-family-location-v18.yml'
   workflow_dispatch:
 
@@ -18,37 +19,21 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Fetch questionnaire source data
-        run: |
-          mkdir -p family-location/v18/source
-          for f in adult0.js adult1.js adult2.js adult3.js teen.js; do
-            curl --fail --location --retry 3 "https://family-location-discovery.vercel.app/$f?source=v18" -o "family-location/v18/source/$f"
-          done
-      - name: Normalize questionnaire data
+      - name: Restore embedded questionnaire data
         run: |
           python - <<'PY'
-          import json, re
+          import base64, gzip, json
           from pathlib import Path
-          src=Path('family-location/v18/source')
-          parts=[]
-          dec=json.JSONDecoder()
-          for name in ['adult0.js','adult1.js','adult2.js','adult3.js']:
-              t=(src/name).read_text()
-              start=t.index('push(')+5
-              frag,_=dec.raw_decode(t[start:])
-              parts.append(frag)
-          adult=json.loads(''.join(parts))
-          tt=(src/'teen.js').read_text()
-          m=re.search(r'const TEEN_SECTIONS=(.*);\s*$',tt,re.S)
-          if not m: raise SystemExit('cannot parse teen source')
-          teen=json.loads(m.group(1))
-          out=Path('family-location/v18/data.json')
-          out.write_text(json.dumps({'adult':adult,'teen':teen},ensure_ascii=False))
-          assert len(adult)==12, len(adult)
-          assert len(teen)==7, len(teen)
-          assert sum(len(s[3]) for s in adult)==88
-          assert sum(len(s[3]) for s in teen)==35
-          print('normalized 12 adult sections / 7 teen sections')
+          root=Path('family-location/v18')
+          payload=''.join((root/f'data-part{i}.b64').read_text().strip() for i in range(2))
+          raw=gzip.decompress(base64.b64decode(payload))
+          data=json.loads(raw)
+          assert len(data['adult'])==12
+          assert len(data['teen'])==7
+          assert sum(len(s[3]) for s in data['adult'])==88
+          assert sum(len(s[3]) for s in data['teen'])==35
+          (root/'data.json').write_bytes(raw)
+          print('restored questionnaire data:',len(raw),'bytes')
           PY
       - name: Generate static multi-page form
         run: |
