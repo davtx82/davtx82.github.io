@@ -24,6 +24,32 @@ jobs:
           for f in adult0.js adult1.js adult2.js adult3.js teen.js; do
             curl --fail --location --retry 3 "https://family-location-discovery.vercel.app/$f?source=v18" -o "family-location/v18/source/$f"
           done
+      - name: Normalize questionnaire data
+        run: |
+          python - <<'PY'
+          import json, re
+          from pathlib import Path
+          src=Path('family-location/v18/source')
+          parts=[]
+          dec=json.JSONDecoder()
+          for name in ['adult0.js','adult1.js','adult2.js','adult3.js']:
+              t=(src/name).read_text()
+              start=t.index('push(')+5
+              frag,_=dec.raw_decode(t[start:])
+              parts.append(frag)
+          adult=json.loads(''.join(parts))
+          tt=(src/'teen.js').read_text()
+          m=re.search(r'const TEEN_SECTIONS=(.*);\s*$',tt,re.S)
+          if not m: raise SystemExit('cannot parse teen source')
+          teen=json.loads(m.group(1))
+          out=Path('family-location/v18/data.json')
+          out.write_text(json.dumps({'adult':adult,'teen':teen},ensure_ascii=False))
+          assert len(adult)==12, len(adult)
+          assert len(teen)==7, len(teen)
+          assert sum(len(s[3]) for s in adult)==88
+          assert sum(len(s[3]) for s in teen)==35
+          print('normalized 12 adult sections / 7 teen sections')
+          PY
       - name: Generate static multi-page form
         run: |
           rm -rf family-location/v18/site
