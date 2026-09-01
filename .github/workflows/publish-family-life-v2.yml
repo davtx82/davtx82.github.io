@@ -1,0 +1,71 @@
+name: Publish Family Life Discovery v2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'family-life/v2/generator-part*.b64'
+      - '.github/workflows/publish-family-life-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore generator
+        run: |
+          cat family-life/v2/generator-part0.b64 family-life/v2/generator-part1.b64 > /tmp/family-life-v2.b64
+          base64 -d /tmp/family-life-v2.b64 | gzip -d > family-life/v2/generate.py
+          python -m py_compile family-life/v2/generate.py
+
+      - name: Generate simplified guide
+        run: |
+          rm -rf family-life/v2/site
+          python family-life/v2/generate.py
+          test "$(find family-life/v2/site -maxdepth 1 -name '*.html' | wc -l)" -eq 4
+          grep -q '34 questions · 6 sections' family-life/v2/site/index.html
+          grep -q '20 questions · 4 sections' family-life/v2/site/index.html
+          grep -q 'Legal equality for women' family-life/v2/site/ema.html
+          grep -q 'Equal marriage and LGBTQ+ legal protections' family-life/v2/site/ema.html
+          grep -q 'If work stress, commute, money pressure' family-life/v2/site/david.html
+          grep -q 'Picture a year of life that would make you say' family-life/v2/site/david.html
+          grep -q 'Check & finish' family-life/v2/site/david.html
+
+      - name: Verify links
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          root=Path('family-life/v2/site')
+          files={p.name for p in root.glob('*.html')}
+          bad=[]
+          for p in root.glob('*.html'):
+              for h in re.findall(r'href="([^"]+\.html)"',p.read_text()):
+                  if h not in files: bad.append((p.name,h))
+          if bad: raise SystemExit(str(bad))
+          print('verified',len(files),'pages with no broken internal links')
+          PY
+
+      - name: Publish to gh-pages
+        run: |
+          cp -R family-life/v2/site /tmp/family-life-v2-site
+          git reset --hard HEAD
+          git clean -fd family-life/v2
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin gh-pages
+          git checkout gh-pages
+          rm -rf family-life/v2
+          mkdir -p family-life/v2
+          cp -R /tmp/family-life-v2-site/. family-life/v2/
+          touch family-life/v2/.nojekyll
+          git add family-life/v2
+          git commit -m "Publish Family Life Discovery v2" || true
+          git push origin gh-pages
